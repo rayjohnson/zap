@@ -5,6 +5,8 @@ VERSION=0.1.0
 SOURCEDIR=.
 SOURCES := $(shell find $(SOURCEDIR) -name '*.go')
 
+LDFLAGS := -ldflags "-X main.VERSION=$(VERSION)"
+
 $(BINARY): $(SOURCES)
 	go build ${LDFLAGS} -o ${BINARY} main.go
 
@@ -16,5 +18,8 @@ clean:
 fmt:
 	go fmt
 
-.PHONY: build clean
+version:
+	@echo $(VERSION)
+
+.PHONY: build clean version
 
