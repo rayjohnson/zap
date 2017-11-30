@@ -142,7 +142,7 @@ func init() {
 	// Set up flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.zap.toml)")
 
-	rootCmd.PersistentFlags().StringVarP(&Server, "server", "s", "tcp://127.0.0.1:1883", "location of MQTT server")
+	rootCmd.PersistentFlags().StringVar(&Server, "server", "tcp://127.0.0.1:1883", "location of MQTT server")
 	rootCmd.PersistentFlags().StringVar(&Username, "username", "", "username for accessing MQTT")
 	rootCmd.PersistentFlags().StringVar(&Password, "password", "", "password for accessing MQTT")
 	rootCmd.PersistentFlags().StringVarP(&ClientId, "id", "i", "", "id to use for this client (default is generated from client-prefix)")

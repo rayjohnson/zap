@@ -48,10 +48,31 @@ data coming from stdin.`,
 var Message string
 var FilePath string
 var Retain bool
-var NullMessage bool
+
+func validatePublishOptions(cmd *cobra.Command) {
+	var count = 0
+
+	if cmd.Flags().Lookup("message").Changed { count += 1 }
+	if cmd.Flags().Lookup("null-message").Changed { count += 1 }
+	if cmd.Flags().Lookup("file").Changed { count += 1 }
+	if cmd.Flags().Lookup("stdin-line").Changed { count += 1 }
+	if cmd.Flags().Lookup("stdin-file").Changed { count += 1 }
+
+	if (count == 0) {
+		fmt.Println("must specify one of --message, --file, --stdin-line, --stdin-file, or --null-message to send any data")
+		os.Exit(1)
+	}
+
+	if (count > 1) {
+		fmt.Println("only one of --message, --file, --stdin-line, --stdin-file, or --null-message can be used")
+		os.Exit(1)
+	}
+
+}
 
 func publish(cmd *cobra.Command, args []string) error {
 	ParseBrokerInfo(cmd, args)
+	validatePublishOptions(cmd)
 
 	// TODO: maybe put this behind a --verbose flag
 	fmt.Println("Starting to publish with following parameters")
@@ -82,17 +103,17 @@ func publish(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Connected to %s\n", Server)
 	}
 
-	// TODO: only one message type option can be set - need to figure out
-	// how check if args were set
-
-	// TODO: support -s, --stdin-file
-	if Message != "" {
+	if cmd.Flags().Lookup("message").Changed {
 		// send a single message
 		client.Publish(Topic, byte(Qos), Retain, Message)
-	} else if NullMessage {
+	}
+
+	if cmd.Flags().Lookup("null-message").Changed {
 		// send a null message (actually an empty string)
 		client.Publish(Topic, byte(Qos), Retain, "")
-	} else if FilePath != "" {
+	}
+
+	if cmd.Flags().Lookup("file").Changed {
 		// send entire file as message
 		if _, err := os.Stat(FilePath); !os.IsNotExist(err) {
     		buf, err := ioutil.ReadFile(FilePath) // just pass the file name
@@ -106,21 +127,27 @@ func publish(cmd *cobra.Command, args []string) error {
 			fmt.Printf("the file \"%s\" does not exist\n", FilePath)
 			os.Exit(1)
 		}
+	}
 
-	} else {
-		// stdin case
-		// TODO: this should be -l, --stdin-line option
+	if cmd.Flags().Lookup("stdin-line").Changed {
+		// read from stdin read by line - send one messages per line
 		stdin := bufio.NewReader(os.Stdin)
 
 		for {
 			message, err := stdin.ReadString('\n')
 			if err == io.EOF {
+				fmt.Printf("message sent or EOF\n")
 				os.Exit(0)
 			}
 			client.Publish(Topic, byte(Qos), Retain, message)
 		}
 	}
 
+	if cmd.Flags().Lookup("stdin-file").Changed {
+		fmt.Println("not implemented yet")
+		os.Exit(1)
+	}
+	
 	fmt.Printf("message sent\n")
 	return nil
 }
@@ -128,8 +155,11 @@ func publish(cmd *cobra.Command, args []string) error {
 func init() {
 	rootCmd.AddCommand(publishCmd)
 
+
+	publishCmd.Flags().BoolP("stdin-line", "l", false, "send stdin data as message with each newline is a new message")
+	publishCmd.Flags().BoolP("stdin-file", "s", false, "read stdin until EOF and send all as one message")
 	publishCmd.Flags().StringVarP(&Message, "message", "m", "", "send the argument to the topic and exit")
 	publishCmd.Flags().StringVarP(&FilePath, "file", "f", "", "send contents of the file to the topic and exit")
 	publishCmd.Flags().BoolVarP(&Retain, "retain", "r", false, "retain as the last good message")
-	publishCmd.Flags().BoolVarP(&NullMessage, "null-message", "n", false, "send a null (zero length) message")
+	publishCmd.Flags().BoolP("null-message", "n", false, "send a null (zero length) message")
 }
