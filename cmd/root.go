@@ -123,12 +123,9 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) {
 func init() { 
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.zap.yaml)")
+	// Set up flags
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.zap.toml)")
 
-	// MQTT connection configuration
 	rootCmd.PersistentFlags().StringVarP(&Server, "server", "s", "tcp://127.0.0.1:1883", "location of MQTT server")
 	rootCmd.PersistentFlags().StringVar(&Username, "username", "", "username for accessing MQTT")
 	rootCmd.PersistentFlags().StringVar(&Password, "password", "", "password for accessing MQTT")
@@ -141,7 +138,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&Topic, "topic", "#", "mqtt topic")
 }
 
-// initConfig reads in config file and ENV variables if set.
+// initConfig reads in config file if set.
 func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
@@ -159,13 +156,9 @@ func initConfig() {
 		viper.SetConfigName(".zap")
 	}
 
-	// viper.AutomaticEnv() // read in environment variables that match
-
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()
-	if err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} else {
+	if err != nil {
 		fmt.Printf("Error reading config file: %s\n", err)
 	}
 }
