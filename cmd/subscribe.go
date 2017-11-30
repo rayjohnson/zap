@@ -46,20 +46,13 @@ var subscribeCmd = &cobra.Command{
 }
 
 func subscribe(cmd *cobra.Command, args []string) error {
-	c := make(chan os.Signal, 1)
-	// i = 0
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		fmt.Println("signal received, exiting")
-		os.Exit(0)
-	}()
-
 	// TODO: get qos from config
 	if ClientId == "" {
 		hostname, _ := os.Hostname()
 		ClientId = hostname + "_" + strconv.Itoa(time.Now().Second())
 	}
+
+	ParseBrokerInfo(cmd, args)
 
 	// TODO: maybe put this behind a --verbose flag
 	fmt.Println("Starting subscription with following parameters")
@@ -85,6 +78,16 @@ func subscribe(cmd *cobra.Command, args []string) error {
 			os.Exit(1)
 		}
 	}
+
+	c := make(chan os.Signal, 1)
+	// i = 0
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("signal received, exiting")
+		os.Exit(0)
+	}()
+
 
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {

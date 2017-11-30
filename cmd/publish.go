@@ -32,7 +32,6 @@ import (
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
-	"github.com/spf13/viper"
 	"github.com/spf13/cobra"
 )
 
@@ -61,11 +60,8 @@ func publish(cmd *cobra.Command, args []string) error {
 	}
 
 	ParseBrokerInfo(cmd, args)
-	
-	// TODO: maybe put this behind a --verbose flag
-	altServer := viper.GetString("server") // retrieve values from viper instead of pflag
-	fmt.Println("Alt Server: ", altServer)
 
+	// TODO: maybe put this behind a --verbose flag
 	fmt.Println("Starting to publish with following parameters")
 	fmt.Println("Server: ", Server)
 	fmt.Println("ClientId: ", ClientId)
@@ -73,7 +69,6 @@ func publish(cmd *cobra.Command, args []string) error {
 	fmt.Println("Password: ", Password)
 	fmt.Println("QOS: ", Qos)
 	fmt.Println("Retain: ", Retain)
-	os.Exit(1)
 
 	connOpts := &MQTT.ClientOptions{
 		ClientID:             ClientId,

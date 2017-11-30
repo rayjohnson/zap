@@ -97,7 +97,7 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) {
 
 	if (! cmd.Parent().PersistentFlags().Lookup("qos").Changed) {
 		if key := getCorrectConfigKey(Broker, "qos"); key != "" {
-			Qos = viper.GetInt16(key)
+			Qos = int16(viper.GetInt(key))
 		}
 	}
 
