@@ -27,7 +27,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
@@ -52,13 +51,6 @@ var Retain bool
 var NullMessage bool
 
 func publish(cmd *cobra.Command, args []string) error {
-
-	// TODO support -I, --id-prefix
-	if ClientId == "" {
-		hostname, _ := os.Hostname()
-		ClientId = hostname + "_" + strconv.Itoa(time.Now().Second())
-	}
-
 	ParseBrokerInfo(cmd, args)
 
 	// TODO: maybe put this behind a --verbose flag

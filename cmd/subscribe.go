@@ -26,7 +26,6 @@ import (
 	//"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -46,12 +45,6 @@ var subscribeCmd = &cobra.Command{
 }
 
 func subscribe(cmd *cobra.Command, args []string) error {
-	// TODO: get qos from config
-	if ClientId == "" {
-		hostname, _ := os.Hostname()
-		ClientId = hostname + "_" + strconv.Itoa(time.Now().Second())
-	}
-
 	ParseBrokerInfo(cmd, args)
 
 	// TODO: maybe put this behind a --verbose flag

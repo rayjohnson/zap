@@ -37,6 +37,7 @@ var Server string
 var Username string
 var Password string
 var ClientId string
+var ClientPrefix string
 var Qos int16
 var KeepAlive int64
 
@@ -113,10 +114,25 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) {
 
 	// TODO: need to implement --client-prefix here as well
 	// TODO: should handle construction of dynamic default here too
+	if (! cmd.Parent().PersistentFlags().Lookup("client-prefix").Changed) {
+		if key := getCorrectConfigKey(Broker, "client-prefix"); key != "" {
+			ClientPrefix = viper.GetString(key)
+		}
+	}
+
 	if (! cmd.Parent().PersistentFlags().Lookup("id").Changed) {
 		if key := getCorrectConfigKey(Broker, "id"); key != "" {
 			ClientId = viper.GetString(key)
 		}
+	}
+
+	// If client id is not set we will generate one here
+	if ClientId == "" {
+		if ClientPrefix == "" {
+			ClientPrefix = "zap_"
+		}
+
+		ClientId = fmt.Sprintf("%S%S", ClientPrefix, os.Getpid())
 	}
 }
 
@@ -129,7 +145,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&Server, "server", "s", "tcp://127.0.0.1:1883", "location of MQTT server")
 	rootCmd.PersistentFlags().StringVar(&Username, "username", "", "username for accessing MQTT")
 	rootCmd.PersistentFlags().StringVar(&Password, "password", "", "password for accessing MQTT")
-	rootCmd.PersistentFlags().StringVarP(&ClientId, "id", "i", "", "id to use for this client (default is $HOSTNAME_<start time>)")
+	rootCmd.PersistentFlags().StringVarP(&ClientId, "id", "i", "", "id to use for this client (default is generated from client-prefix)")
+	rootCmd.PersistentFlags().StringVar(&ClientPrefix, "client-prefix", "zap_", "prefix to use to generate a client id if none is specified")
 	rootCmd.PersistentFlags().Int16Var(&Qos, "qos", 1, "qos setting")
 	rootCmd.PersistentFlags().Int64VarP(&KeepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
 	rootCmd.PersistentFlags().StringVarP(&Broker, "broker", "b", "", "broker configuration")
