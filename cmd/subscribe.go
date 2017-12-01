@@ -40,8 +40,8 @@ var CleanSession bool
 var subscribeCmd = &cobra.Command{
 	Use:   "subscribe",
 	Short: "Listen to an MQTT server on a topic",
-	Long: `Subscribe to a topic on the MQTT server`,
-	RunE: subscribe,
+	Long:  `Subscribe to a topic on the MQTT server`,
+	RunE:  subscribe,
 }
 
 func subscribe(cmd *cobra.Command, args []string) error {
@@ -73,14 +73,12 @@ func subscribe(cmd *cobra.Command, args []string) error {
 	}
 
 	c := make(chan os.Signal, 1)
-	// i = 0
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		fmt.Println("signal received, exiting")
 		os.Exit(0)
 	}()
-
 
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {

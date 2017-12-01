@@ -52,18 +52,28 @@ var Retain bool
 func validatePublishOptions(cmd *cobra.Command) {
 	var count = 0
 
-	if cmd.Flags().Lookup("message").Changed { count += 1 }
-	if cmd.Flags().Lookup("null-message").Changed { count += 1 }
-	if cmd.Flags().Lookup("file").Changed { count += 1 }
-	if cmd.Flags().Lookup("stdin-line").Changed { count += 1 }
-	if cmd.Flags().Lookup("stdin-file").Changed { count += 1 }
+	if cmd.Flags().Lookup("message").Changed {
+		count += 1
+	}
+	if cmd.Flags().Lookup("null-message").Changed {
+		count += 1
+	}
+	if cmd.Flags().Lookup("file").Changed {
+		count += 1
+	}
+	if cmd.Flags().Lookup("stdin-line").Changed {
+		count += 1
+	}
+	if cmd.Flags().Lookup("stdin-file").Changed {
+		count += 1
+	}
 
-	if (count == 0) {
+	if count == 0 {
 		fmt.Println("must specify one of --message, --file, --stdin-line, --stdin-file, or --null-message to send any data")
 		os.Exit(1)
 	}
 
-	if (count > 1) {
+	if count > 1 {
 		fmt.Println("only one of --message, --file, --stdin-line, --stdin-file, or --null-message can be used")
 		os.Exit(1)
 	}
@@ -116,11 +126,11 @@ func publish(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Lookup("file").Changed {
 		// send entire file as message
 		if _, err := os.Stat(FilePath); !os.IsNotExist(err) {
-    		buf, err := ioutil.ReadFile(FilePath) // just pass the file name
-		    if err != nil {
-		        fmt.Print("error reading file: \"%s\"\n", err)
-		        os.Exit(1)
-		    }
+			buf, err := ioutil.ReadFile(FilePath) // just pass the file name
+			if err != nil {
+				fmt.Print("error reading file: \"%s\"\n", err)
+				os.Exit(1)
+			}
 
 			client.Publish(Topic, byte(Qos), Retain, string(buf))
 		} else {
@@ -147,14 +157,13 @@ func publish(cmd *cobra.Command, args []string) error {
 		fmt.Println("not implemented yet")
 		os.Exit(1)
 	}
-	
+
 	fmt.Printf("message sent\n")
 	return nil
 }
 
 func init() {
 	rootCmd.AddCommand(publishCmd)
-
 
 	publishCmd.Flags().BoolP("stdin-line", "l", false, "send stdin data as message with each newline is a new message")
 	publishCmd.Flags().BoolP("stdin-file", "s", false, "read stdin until EOF and send all as one message")

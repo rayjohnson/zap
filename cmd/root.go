@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -42,7 +43,7 @@ var Qos int16
 var KeepAlive int64
 
 // TODO: move topic to sub-command - each needs different defaults
-var Topic string 
+var Topic string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -82,45 +83,43 @@ func getCorrectConfigKey(broker string, key string) string {
 
 // This should only be called by subcommands
 func ParseBrokerInfo(cmd *cobra.Command, args []string) {
-	if (! cmd.Parent().PersistentFlags().Lookup("server").Changed) {
+	if !cmd.Parent().PersistentFlags().Lookup("server").Changed {
 		if key := getCorrectConfigKey(Broker, "server"); key != "" {
 			Server = viper.GetString(key)
 		}
 	}
 
-	if (! cmd.Parent().PersistentFlags().Lookup("username").Changed) {
+	if !cmd.Parent().PersistentFlags().Lookup("username").Changed {
 		if key := getCorrectConfigKey(Broker, "username"); key != "" {
 			Username = viper.GetString(key)
 		}
 	}
 
-	if (! cmd.Parent().PersistentFlags().Lookup("password").Changed) {
+	if !cmd.Parent().PersistentFlags().Lookup("password").Changed {
 		if key := getCorrectConfigKey(Broker, "password"); key != "" {
 			Password = viper.GetString(key)
 		}
 	}
 
-	if (! cmd.Parent().PersistentFlags().Lookup("qos").Changed) {
+	if !cmd.Parent().PersistentFlags().Lookup("qos").Changed {
 		if key := getCorrectConfigKey(Broker, "qos"); key != "" {
 			Qos = int16(viper.GetInt(key))
 		}
 	}
 
-	if (! cmd.Parent().PersistentFlags().Lookup("keepalive").Changed) {
+	if !cmd.Parent().PersistentFlags().Lookup("keepalive").Changed {
 		if key := getCorrectConfigKey(Broker, "keepalive"); key != "" {
 			KeepAlive = viper.GetInt64(key)
 		}
 	}
 
-	// TODO: need to implement --client-prefix here as well
-	// TODO: should handle construction of dynamic default here too
-	if (! cmd.Parent().PersistentFlags().Lookup("client-prefix").Changed) {
+	if !cmd.Parent().PersistentFlags().Lookup("client-prefix").Changed {
 		if key := getCorrectConfigKey(Broker, "client-prefix"); key != "" {
 			ClientPrefix = viper.GetString(key)
 		}
 	}
 
-	if (! cmd.Parent().PersistentFlags().Lookup("id").Changed) {
+	if !cmd.Parent().PersistentFlags().Lookup("id").Changed {
 		if key := getCorrectConfigKey(Broker, "id"); key != "" {
 			ClientId = viper.GetString(key)
 		}
@@ -132,11 +131,11 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) {
 			ClientPrefix = "zap_"
 		}
 
-		ClientId = fmt.Sprintf("%S%S", ClientPrefix, os.Getpid())
+		ClientId = fmt.Sprintf("%s%s", ClientPrefix, strconv.Itoa(os.Getpid()))
 	}
 }
 
-func init() { 
+func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Set up flags

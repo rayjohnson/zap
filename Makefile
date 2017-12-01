@@ -1,6 +1,6 @@
 
 BINARY=zap
-VERSION=0.1.0
+VERSION := $(shell cat VERSION)
 
 SOURCEDIR=.
 SOURCES := $(shell find $(SOURCEDIR) -name '*.go')
@@ -8,7 +8,7 @@ SOURCES := $(shell find $(SOURCEDIR) -name '*.go')
 LDFLAGS := -ldflags "-X main.VERSION=$(VERSION)"
 
 $(BINARY): $(SOURCES)
-	go build ${LDFLAGS} -o ${BINARY} main.go
+	@go build ${LDFLAGS} -o ${BINARY} main.go
 
 .PHONY: build
 build: $(BINARY)
@@ -19,7 +19,7 @@ clean:  ## Clean up any generated files
 
 .PHONY: fmt
 fmt:  ## Run go fmt on source base
-	go fmt
+	@go fmt ./...
 
 .PHONY: help
 help:   ## Display this help message
