@@ -42,7 +42,7 @@ var publishCmd = &cobra.Command{
 
 Multiple options are available to send a single argument, a whole file, or 
 data coming from stdin.`,
-	RunE: publish,
+	Run: publish,
 }
 
 var Message string
@@ -80,7 +80,7 @@ func validatePublishOptions(cmd *cobra.Command) {
 
 }
 
-func publish(cmd *cobra.Command, args []string) error {
+func publish(cmd *cobra.Command, args []string) {
 	ParseBrokerInfo(cmd, args)
 	validatePublishOptions(cmd)
 
@@ -159,7 +159,6 @@ func publish(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("message sent\n")
-	return nil
 }
 
 func init() {
