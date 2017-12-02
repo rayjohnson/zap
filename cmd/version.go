@@ -26,32 +26,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var GenAutoComplete bool
+var genAutoComplete bool
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Gives version information about zap",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Shows version information about zap",
+	Long: `SHows version information about zap
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Run with the --generate-auto-complete option and a file named
+zap.sh will be generated for use in autocomplete scripts`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if GenAutoComplete {
+		if genAutoComplete {
 			cmd.Root().GenBashCompletionFile("zap.sh")
-			// TODO: print some instructions
 			return
 		}
 
-		// TODO: need better version string
-		fmt.Println("zap version " + VERSION)
+		fmt.Println("zap version " + VERSION + ", Revision: " + COMMIT)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
 
-	versionCmd.Flags().BoolVarP(&GenAutoComplete, "generate-auto-complete", "g", false, "generates a bash autocomplete script for zap to zap.sh")
+	versionCmd.Flags().BoolVarP(&genAutoComplete, "generate-auto-complete", "g", false, "generates a bash autocomplete script for zap to zap.sh")
 }

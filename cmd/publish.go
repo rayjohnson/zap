@@ -53,19 +53,19 @@ func validatePublishOptions(cmd *cobra.Command) {
 	var count = 0
 
 	if cmd.Flags().Lookup("message").Changed {
-		count += 1
+		count++
 	}
 	if cmd.Flags().Lookup("null-message").Changed {
-		count += 1
+		count++
 	}
 	if cmd.Flags().Lookup("file").Changed {
-		count += 1
+		count++
 	}
 	if cmd.Flags().Lookup("stdin-line").Changed {
-		count += 1
+		count++
 	}
 	if cmd.Flags().Lookup("stdin-file").Changed {
-		count += 1
+		count++
 	}
 
 	if count == 0 {

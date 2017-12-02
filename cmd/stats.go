@@ -33,12 +33,7 @@ import (
 	"github.com/rayjohnson/zap/viewstats"
 )
 
-type MsgData struct {
-	topic   string
-	message string
-}
-
-var StatsTopic = "$SYS/#"
+const statsTopic = "$SYS/#"
 
 // statsCmd represents the stats command
 var statsCmd = &cobra.Command{
@@ -65,7 +60,7 @@ func stats(cmd *cobra.Command, args []string) {
 
 	connOpts := &MQTT.ClientOptions{
 		ClientID:             ClientId,
-		CleanSession:         CleanSession,
+		CleanSession:         true,
 		Username:             Username,
 		Password:             Password,
 		MaxReconnectInterval: 1 * time.Second,
@@ -74,7 +69,7 @@ func stats(cmd *cobra.Command, args []string) {
 	}
 	connOpts.AddBroker(Server)
 	connOpts.OnConnect = func(c MQTT.Client) {
-		if token := c.Subscribe(StatsTopic, byte(Qos), func(client MQTT.Client, msg MQTT.Message) {
+		if token := c.Subscribe(statsTopic, byte(Qos), func(client MQTT.Client, msg MQTT.Message) {
 			mqInbound <- [2]string{msg.Topic(), string(msg.Payload())}
 		}); token.Wait() && token.Error() != nil {
 			fmt.Printf("Could not subscribe: %s\n", token.Error())
@@ -90,6 +85,7 @@ func stats(cmd *cobra.Command, args []string) {
 		fmt.Printf("Connected to %s\n", Server)
 	}
 
+	defer client.Disconnect(250)
 	go viewstats.StartStatsDisplay(mqInbound)
 
 	for {
@@ -105,14 +101,4 @@ func stats(cmd *cobra.Command, args []string) {
 
 func init() {
 	rootCmd.AddCommand(statsCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// statsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// statsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

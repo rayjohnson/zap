@@ -31,6 +31,7 @@ import (
 )
 
 var VERSION string
+var COMMIT string
 
 var cfgFile string
 var Broker string
@@ -57,8 +58,9 @@ MQTT message bus`,
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(version string) {
+func Execute(version string, commit string) {
 	VERSION = version
+	COMMIT = commit
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

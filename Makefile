@@ -1,11 +1,12 @@
 
 BINARY=zap
 VERSION := $(shell cat VERSION)
+COMMIT=$(shell git rev-parse HEAD)
 
 SOURCEDIR=.
 SOURCES := $(shell find $(SOURCEDIR) -name '*.go')
 
-LDFLAGS := -ldflags "-X main.VERSION=$(VERSION)"
+LDFLAGS := -ldflags "-X main.VERSION=$(VERSION) -X main.COMMIT=${COMMIT}"
 
 $(BINARY): $(SOURCES)
 	@go build ${LDFLAGS} -o ${BINARY} main.go
@@ -24,7 +25,11 @@ clean:  ## Clean up any generated files
 
 .PHONY: fmt
 fmt:  ## Run go fmt on source base
-	@go fmt ./...
+	@go fmt $(shell go list ./... | grep -v /vendor/)
+
+.PHONY: lint
+lint:  ## Run golint on source base
+	@golint $(shell go list ./... | grep -v /vendor/)
 
 .PHONY: dep_graph
 dep_graph:  ## Generate a dependency graph from dep and graphvis

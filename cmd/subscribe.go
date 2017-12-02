@@ -34,7 +34,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var CleanSession bool
+var cleanSession bool
 
 // subscribeCmd represents the subscribe command
 var subscribeCmd = &cobra.Command{
@@ -57,7 +57,7 @@ func subscribe(cmd *cobra.Command, args []string) {
 
 	connOpts := &MQTT.ClientOptions{
 		ClientID:             ClientId,
-		CleanSession:         CleanSession,
+		CleanSession:         cleanSession,
 		Username:             Username,
 		Password:             Password,
 		MaxReconnectInterval: 1 * time.Second,
@@ -105,5 +105,5 @@ func init() {
 	// TODO: -N option - do not print an extra newline at end of message
 	// TODO: -R option - not even sure about this one
 	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
-	publishCmd.Flags().BoolVar(&CleanSession, "disable-clean-session", false, "send queued up messages if mqtt has persistence - be sure to set client id")
+	publishCmd.Flags().BoolVar(&cleanSession, "disable-clean-session", false, "send queued up messages if mqtt has persistence - be sure to set client id")
 }

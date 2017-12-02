@@ -23,10 +23,11 @@ package main
 import "github.com/rayjohnson/zap/cmd"
 
 var (
-	// VERSION is set during build
+	// These are set during build
 	VERSION = "0.0.1"
+	COMMIT = "blah"
 )
 
 func main() {
-	cmd.Execute(VERSION)
+	cmd.Execute(VERSION, COMMIT)
 }

@@ -1,7 +1,26 @@
+// Copyright © 2017 Ray Johnson <ray.johnson@gmail.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package viewstats
 
 import (
-	// "fmt"
 	"fmt"
 	"time"
 
@@ -9,21 +28,19 @@ import (
 )
 
 const coldef = termbox.ColorDefault
-const DATELAYOUT = "02/Jan/2006:15:04:05 -0700"
-const DATEPRINT = "Jan 02, 2006 15:04:05"
+const datePrint = "Jan 02, 2006 15:04:05"
 
-type DataHash map[string]string
+type dataHash map[string]string
 
-func (d DataHash) Get(key string) (result string) {
+func (d dataHash) get(key string) (result string) {
 	if v, ok := d[key]; ok {
 		return v
-	} else {
-		d[key] = "n/a"
-		return d[key]
 	}
+	d[key] = "n/a"
+	return d[key]
 }
 
-var mqttData DataHash
+var mqttData dataHash
 
 var (
 	startTime time.Time
@@ -32,15 +49,17 @@ var (
 	doExit bool
 )
 
+// StartStatsDisplay sets up the terminal UI to display 
+// data.  It will run in an infinite loop until Ctrl-C is hit
 func StartStatsDisplay(theChan chan [2]string) {
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
 	}
-	mqttData = make(DataHash)
+	mqttData = make(dataHash)
 
 	termbox.SetInputMode(termbox.InputEsc)
-	redraw_all()
+	redrawAll()
 
 	//capture and process events from the CLI
 	eventChan := make(chan termbox.Event, 16)
@@ -67,12 +86,15 @@ func StartStatsDisplay(theChan chan [2]string) {
 
 		select {
 		case <-timer:
-			redraw_all()
+			redrawAll()
 		}
 	}
 }
 
+// AddStat parses the MQTT topics and puts the latest
+// values in a hash that is displayed in the UI
 func AddStat(topic string, data string) {
+	// TODO: make this a switch statement
 	if topic == "$SYS/broker/load/bytes/received" {
 		mqttData["Load Bytes Received"] = data
 	}
@@ -151,26 +173,25 @@ func init() {
 	startTime = time.Now()
 }
 
-func redraw_all() {
+func redrawAll() {
 	termbox.Clear(coldef, coldef)
 	w, h = termbox.Size()
 	half := w / 2
 
 	drawCurrentTime(1, 0)
 
-	cur_y := 2
-	cur_y = drawBroker(0, cur_y)
-	cur_y++
-	cur_y = drawClient(0, cur_y)
+	curY := 2
+	curY = drawBroker(0, curY)
+	curY++
+	curY = drawClient(0, curY)
 
-	cur_y = 2
-	cur_y = drawLoad(half, cur_y)
-	cur_y++
-	cur_y = drawMessages(half, cur_y)
+	curY = 2
+	curY = drawLoad(half, curY)
+	curY++
+	curY = drawMessages(half, curY)
 
 	termbox.HideCursor()
 
-	// tbprint(w-6, h-1, coldef, termbox.ColorBlue, "ʕ◔ϖ◔ʔ")
 	termbox.Flush()
 }
 
@@ -178,17 +199,17 @@ func drawBroker(x, y int) int {
 	mid := 19
 	drawTitle(x, y, mid+8, "Broker")
 	y++
-	drawOne(x, y, mid, "Broker Version", mqttData.Get("Broker Version"))
+	drawOne(x, y, mid, "Broker Version", mqttData.get("Broker Version"))
 	y++
-	drawOne(x, y, mid, "Broker Time", mqttData.Get("Broker Time"))
+	drawOne(x, y, mid, "Broker Time", mqttData.get("Broker Time"))
 	y++
-	drawOne(x, y, mid, "Broker Uptime", mqttData.Get("Broker Uptime"))
+	drawOne(x, y, mid, "Broker Uptime", mqttData.get("Broker Uptime"))
 	y++
-	drawOne(x, y, mid, "Subscriptions Count", mqttData.Get("Subscriptions Count"))
+	drawOne(x, y, mid, "Subscriptions Count", mqttData.get("Subscriptions Count"))
 	y++
-	drawOne(x, y, mid, "Total Bytes Sent", mqttData.Get("Bytes Sent"))
+	drawOne(x, y, mid, "Total Bytes Sent", mqttData.get("Bytes Sent"))
 	y++
-	drawOne(x, y, mid, "Total Bytes Received", mqttData.Get("Bytes Received"))
+	drawOne(x, y, mid, "Total Bytes Received", mqttData.get("Bytes Received"))
 	y++
 
 	return y
@@ -198,9 +219,9 @@ func drawLoad(x, y int) int {
 	mid := 14
 	drawTitle(x, y, mid+8, "Load")
 	y++
-	drawOne(x, y, mid, "Heap Current Size", mqttData.Get("Heap Current Size"))
+	drawOne(x, y, mid, "Heap Current Size", mqttData.get("Heap Current Size"))
 	y++
-	drawOne(x, y, mid, "Heap Maximum Size", mqttData.Get("Heap Maximum Size"))
+	drawOne(x, y, mid, "Heap Maximum Size", mqttData.get("Heap Maximum Size"))
 	y++
 
 	return y
@@ -210,22 +231,22 @@ func drawMessages(x, y int) int {
 	mid := 14
 	drawTitle(x, y, mid+8, "Message Stats")
 	y++
-	drawOne(x, y, mid, "Messages Received", mqttData.Get("Messages Received"))
+	drawOne(x, y, mid, "Messages Received", mqttData.get("Messages Received"))
 	y++
-	drawOne(x, y, mid, "Messages Sent", mqttData.Get("Messages Sent"))
+	drawOne(x, y, mid, "Messages Sent", mqttData.get("Messages Sent"))
 	y++
-	drawOne(x, y, mid, "Messages Inflight", mqttData.Get("Messages Inflight"))
+	drawOne(x, y, mid, "Messages In-flight", mqttData.get("Messages Inflight"))
 	y++
-	drawOne(x, y, mid, "Messages Stored", mqttData.Get("Messages Stored"))
+	drawOne(x, y, mid, "Messages Stored", mqttData.get("Messages Stored"))
 	y++
 	y++
-	drawOne(x, y, mid, "Messages Publish Dropped", mqttData.Get("Messages Publish Dropped"))
+	drawOne(x, y, mid, "Messages Publish Dropped", mqttData.get("Messages Publish Dropped"))
 	y++
-	drawOne(x, y, mid, "Messages Publish Sent", mqttData.Get("Messages Publish Sent"))
+	drawOne(x, y, mid, "Messages Publish Sent", mqttData.get("Messages Publish Sent"))
 	y++
-	drawOne(x, y, mid, "Messages Publish Received", mqttData.Get("Messages Publish Received"))
+	drawOne(x, y, mid, "Messages Publish Received", mqttData.get("Messages Publish Received"))
 	y++
-	drawOne(x, y, mid, "Messages Retained Count", mqttData.Get("Messages Retained Count"))
+	drawOne(x, y, mid, "Messages Retained Count", mqttData.get("Messages Retained Count"))
 	y++
 
 	return y
@@ -235,15 +256,15 @@ func drawClient(x, y int) int {
 	mid := 20
 	drawTitle(x, y, mid+8, "Clients")
 	y++
-	drawOne(x, y, mid, "Clients Total", mqttData.Get("Clients Total"))
+	drawOne(x, y, mid, "Clients Total", mqttData.get("Clients Total"))
 	y++
-	drawOne(x, y, mid, "Clients Connected", mqttData.Get("Clients Connected"))
+	drawOne(x, y, mid, "Clients Connected", mqttData.get("Clients Connected"))
 	y++
-	drawOne(x, y, mid, "Clients Disconnected", mqttData.Get("Clients Disconnected"))
+	drawOne(x, y, mid, "Clients Disconnected", mqttData.get("Clients Disconnected"))
 	y++
-	drawOne(x, y, mid, "Clients Expired", mqttData.Get("Clients Expired"))
+	drawOne(x, y, mid, "Clients Expired", mqttData.get("Clients Expired"))
 	y++
-	drawOne(x, y, mid, "Clients Maximum", mqttData.Get("Clients Maximum"))
+	drawOne(x, y, mid, "Clients Maximum", mqttData.get("Clients Maximum"))
 	y++
 
 	return y
@@ -269,7 +290,7 @@ func drawCurrentTime(x, y int) {
 	h := int(since.Hours())
 	m := int(since.Minutes()) % 60
 	s := int(since.Seconds()) % 60
-	timeStr := fmt.Sprintf("Now:  %-24s  Watching:  %3d:%02d:%02d", now.Format(DATEPRINT), h, m, s)
+	timeStr := fmt.Sprintf("Now:  %-24s  Watching:  %3d:%02d:%02d", now.Format(datePrint), h, m, s)
 	for i, c := range timeStr {
 		termbox.SetCell(x+i, y, c, coldef, coldef)
 	}
