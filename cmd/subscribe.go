@@ -41,7 +41,7 @@ var subscribeCmd = &cobra.Command{
 	Use:   "subscribe",
 	Short: "Listen to an MQTT server on a topic",
 	Long:  `Subscribe to a topic on the MQTT server`,
-	Run:  subscribe,
+	Run:   subscribe,
 }
 
 func subscribe(cmd *cobra.Command, args []string) {

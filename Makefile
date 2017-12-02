@@ -23,12 +23,9 @@ clean:  ## Clean up any generated files
 	@if [ -f ${BINARY} ] ; then rm ${BINARY} ; fi
 	@if [ -f reports ] ; then rm reports ; fi
 
-.PHONY: fmt
-fmt:  ## Run go fmt on source base
-	@go fmt $(shell go list ./... | grep -v /vendor/)
-
 .PHONY: lint
-lint:  ## Run golint on source base
+lint:  ## Run golint and go fmt on source base
+	@go fmt $(shell go list ./... | grep -v /vendor/)
 	@golint $(shell go list ./... | grep -v /vendor/)
 
 .PHONY: dep_graph

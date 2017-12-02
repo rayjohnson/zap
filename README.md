@@ -23,7 +23,7 @@ Run this to get an understanding of what the Makefile does:
 $ make help
 setup           Creates vendor directory with all dependencies
 clean           Clean up any generated files
-fmt             Run go fmt on source base
+lint            Run golint and go fmt on source base
 dep_graph       Generate a dependency graph from dep and graphvis
 help            Display this help message
 todo            Greps for any TODO comments in the source code

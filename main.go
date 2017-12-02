@@ -25,7 +25,7 @@ import "github.com/rayjohnson/zap/cmd"
 var (
 	// These are set during build
 	VERSION = "0.0.1"
-	COMMIT = "blah"
+	COMMIT  = "blah"
 )
 
 func main() {

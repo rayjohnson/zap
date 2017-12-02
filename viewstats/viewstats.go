@@ -49,7 +49,7 @@ var (
 	doExit bool
 )
 
-// StartStatsDisplay sets up the terminal UI to display 
+// StartStatsDisplay sets up the terminal UI to display
 // data.  It will run in an infinite loop until Ctrl-C is hit
 func StartStatsDisplay(theChan chan [2]string) {
 	err := termbox.Init()
