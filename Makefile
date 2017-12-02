@@ -10,6 +10,10 @@ LDFLAGS := -ldflags "-X main.VERSION=$(VERSION)"
 $(BINARY): $(SOURCES)
 	@go build ${LDFLAGS} -o ${BINARY} main.go
 
+.PHONY: setup
+setup:  ## Creates vendor directory with all dependencies
+	@dep ensure
+
 .PHONY: build
 build: $(BINARY)
 

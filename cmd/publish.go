@@ -99,7 +99,7 @@ func publish(cmd *cobra.Command, args []string) error {
 		Username:             Username,
 		Password:             Password,
 		MaxReconnectInterval: 1 * time.Second,
-		KeepAlive:            KeepAlive,
+		KeepAlive:            time.Duration(KeepAlive),
 		TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
 	}
 	connOpts.AddBroker(Server)

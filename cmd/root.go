@@ -39,8 +39,8 @@ var Username string
 var Password string
 var ClientId string
 var ClientPrefix string
-var Qos int16
-var KeepAlive int64
+var Qos int
+var KeepAlive int
 
 // TODO: move topic to sub-command - each needs different defaults
 var Topic string
@@ -103,13 +103,13 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) {
 
 	if !cmd.Parent().PersistentFlags().Lookup("qos").Changed {
 		if key := getCorrectConfigKey(Broker, "qos"); key != "" {
-			Qos = int16(viper.GetInt(key))
+			Qos = viper.GetInt(key)
 		}
 	}
 
 	if !cmd.Parent().PersistentFlags().Lookup("keepalive").Changed {
 		if key := getCorrectConfigKey(Broker, "keepalive"); key != "" {
-			KeepAlive = viper.GetInt64(key)
+			KeepAlive = viper.GetInt(key)
 		}
 	}
 
@@ -146,8 +146,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&Password, "password", "", "password for accessing MQTT")
 	rootCmd.PersistentFlags().StringVarP(&ClientId, "id", "i", "", "id to use for this client (default is generated from client-prefix)")
 	rootCmd.PersistentFlags().StringVar(&ClientPrefix, "client-prefix", "zap_", "prefix to use to generate a client id if none is specified")
-	rootCmd.PersistentFlags().Int16Var(&Qos, "qos", 1, "qos setting")
-	rootCmd.PersistentFlags().Int64VarP(&KeepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
+	rootCmd.PersistentFlags().IntVar(&Qos, "qos", 1, "qos setting")
+	rootCmd.PersistentFlags().IntVarP(&KeepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
 	rootCmd.PersistentFlags().StringVarP(&Broker, "broker", "b", "", "broker configuration")
 
 	// TODO: this should move to sub-command so it has different defaults
