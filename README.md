@@ -9,6 +9,12 @@ This project is very much in progress.  Check back soon.
 This project depends on the following tools:
 * golang
 * dep
+* graphviz
+
+```bash
+brew install graphviz
+brew install dep
+```
 
 I have a Makefile that manages most things.
 
@@ -18,6 +24,7 @@ $ make help
 setup           Creates vendor directory with all dependencies
 clean           Clean up any generated files
 fmt             Run go fmt on source base
+dep_graph       Generate a dependency graph from dep and graphvis
 help            Display this help message
 todo            Greps for any TODO comments in the source code
 version         Show the version the Makefile will build

@@ -20,10 +20,16 @@ build: $(BINARY)
 .PHONY: clean
 clean:  ## Clean up any generated files
 	@if [ -f ${BINARY} ] ; then rm ${BINARY} ; fi
+	@if [ -f reports ] ; then rm reports ; fi
 
 .PHONY: fmt
 fmt:  ## Run go fmt on source base
 	@go fmt ./...
+
+.PHONY: dep_graph
+dep_graph:  ## Generate a dependency graph from dep and graphvis
+	@mkdir -p reports
+	@dep status -dot | dot -T png > reports/dependancy_graph.png
 
 .PHONY: help
 help:   ## Display this help message
