@@ -22,12 +22,10 @@ package cmd
 
 import (
 	"bufio"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
@@ -81,28 +79,10 @@ func validatePublishOptions(cmd *cobra.Command) {
 }
 
 func publish(cmd *cobra.Command, args []string) {
-	ParseBrokerInfo(cmd, args)
+	connOpts := ParseBrokerInfo(cmd, args)
+	connOpts.CleanSession = true
+
 	validatePublishOptions(cmd)
-
-	// TODO: maybe put this behind a --verbose flag
-	fmt.Println("Starting to publish with following parameters")
-	fmt.Println("Server: ", Server)
-	fmt.Println("ClientId: ", ClientId)
-	fmt.Println("Username: ", Username)
-	fmt.Println("Password: ", Password)
-	fmt.Println("QOS: ", Qos)
-	fmt.Println("Retain: ", Retain)
-
-	connOpts := &MQTT.ClientOptions{
-		ClientID:             ClientId,
-		CleanSession:         true,
-		Username:             Username,
-		Password:             Password,
-		MaxReconnectInterval: 1 * time.Second,
-		KeepAlive:            time.Duration(KeepAlive),
-		TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
-	}
-	connOpts.AddBroker(Server)
 
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -110,7 +90,7 @@ func publish(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	} else {
 		// TODO: put behind verbose
-		fmt.Printf("Connected to %s\n", Server)
+		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
 	if cmd.Flags().Lookup("message").Changed {

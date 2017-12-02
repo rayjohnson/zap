@@ -3,8 +3,7 @@ BINARY=zap
 VERSION := $(shell cat VERSION)
 COMMIT=$(shell git rev-parse HEAD)
 
-SOURCEDIR=.
-SOURCES := $(shell find $(SOURCEDIR) -name '*.go')
+SOURCES := $(shell find main.go cmd viewstats -name '*.go')
 
 LDFLAGS := -ldflags "-X main.VERSION=$(VERSION) -X main.COMMIT=${COMMIT}"
 

@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"crypto/tls"
 	"fmt"
 	//"log"
 	"os"
@@ -45,26 +44,8 @@ var subscribeCmd = &cobra.Command{
 }
 
 func subscribe(cmd *cobra.Command, args []string) {
-	ParseBrokerInfo(cmd, args)
+	connOpts := ParseBrokerInfo(cmd, args)
 
-	// TODO: maybe put this behind a --verbose flag
-	fmt.Println("Starting subscription with following parameters")
-	fmt.Println("Server: ", Server)
-	fmt.Println("ClientId: ", ClientId)
-	fmt.Println("Username: ", Username)
-	fmt.Println("Password: ", Password)
-	fmt.Println("QOS: ", Qos)
-
-	connOpts := &MQTT.ClientOptions{
-		ClientID:             ClientId,
-		CleanSession:         cleanSession,
-		Username:             Username,
-		Password:             Password,
-		MaxReconnectInterval: 1 * time.Second,
-		KeepAlive:            time.Duration(KeepAlive),
-		TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
-	}
-	connOpts.AddBroker(Server)
 	connOpts.OnConnect = func(c MQTT.Client) {
 		if token := c.Subscribe(Topic, byte(Qos), onMessageReceived); token.Wait() && token.Error() != nil {
 			fmt.Printf("Could not subscribe: %s\n", token.Error())
@@ -85,7 +66,7 @@ func subscribe(cmd *cobra.Command, args []string) {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		os.Exit(1)
 	} else {
-		fmt.Printf("Connected to %s\n", Server)
+		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
 	for {

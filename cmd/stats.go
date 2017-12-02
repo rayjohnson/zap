@@ -21,11 +21,8 @@
 package cmd
 
 import (
-	"crypto/tls"
 	"fmt"
-	//"log"
 	"os"
-	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/spf13/cobra"
@@ -46,28 +43,11 @@ TODO: a little more documentation about what the values mean`,
 }
 
 func stats(cmd *cobra.Command, args []string) {
-	ParseBrokerInfo(cmd, args)
-
-	// TODO: maybe put this behind a --verbose flag
-	fmt.Println("Starting subscription with following parameters")
-	fmt.Println("Server: ", Server)
-	fmt.Println("ClientId: ", ClientId)
-	fmt.Println("Username: ", Username)
-	fmt.Println("Password: ", Password)
-	fmt.Println("QOS: ", Qos)
+	connOpts := ParseBrokerInfo(cmd, args)
+	connOpts.CleanSession = true
 
 	mqInbound := make(chan [2]string)
 
-	connOpts := &MQTT.ClientOptions{
-		ClientID:             ClientId,
-		CleanSession:         true,
-		Username:             Username,
-		Password:             Password,
-		MaxReconnectInterval: 1 * time.Second,
-		KeepAlive:            time.Duration(KeepAlive),
-		TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
-	}
-	connOpts.AddBroker(Server)
 	connOpts.OnConnect = func(c MQTT.Client) {
 		if token := c.Subscribe(statsTopic, byte(Qos), func(client MQTT.Client, msg MQTT.Message) {
 			mqInbound <- [2]string{msg.Topic(), string(msg.Payload())}
@@ -82,7 +62,7 @@ func stats(cmd *cobra.Command, args []string) {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		os.Exit(1)
 	} else {
-		fmt.Printf("Connected to %s\n", Server)
+		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
 	defer client.Disconnect(250)
