@@ -46,12 +46,15 @@ func stats(cmd *cobra.Command, args []string) {
 	connOpts := ParseBrokerInfo(cmd, args)
 	connOpts.CleanSession = true
 
+	PrintConnectionInfo()
+
 	mqInbound := make(chan [2]string)
 
 	connOpts.OnConnect = func(c MQTT.Client) {
 		if token := c.Subscribe(statsTopic, byte(Qos), func(client MQTT.Client, msg MQTT.Message) {
 			mqInbound <- [2]string{msg.Topic(), string(msg.Payload())}
 		}); token.Wait() && token.Error() != nil {
+			// TODO: if this happens after StartStatsDisplay then we will mangle the terminal
 			fmt.Printf("Could not subscribe: %s\n", token.Error())
 			os.Exit(1)
 		}
@@ -61,7 +64,9 @@ func stats(cmd *cobra.Command, args []string) {
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		os.Exit(1)
-	} else {
+	}
+
+	if optVerbose
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 

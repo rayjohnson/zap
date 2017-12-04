@@ -84,12 +84,14 @@ func publish(cmd *cobra.Command, args []string) {
 
 	validatePublishOptions(cmd)
 
+	PrintConnectionInfo()
+
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		os.Exit(1)
-	} else {
-		// TODO: put behind verbose
+	}
+	if optVerbose
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 

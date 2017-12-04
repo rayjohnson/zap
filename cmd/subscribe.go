@@ -46,6 +46,8 @@ var subscribeCmd = &cobra.Command{
 func subscribe(cmd *cobra.Command, args []string) {
 	connOpts := ParseBrokerInfo(cmd, args)
 
+	PrintConnectionInfo()
+
 	connOpts.OnConnect = func(c MQTT.Client) {
 		if token := c.Subscribe(Topic, byte(Qos), onMessageReceived); token.Wait() && token.Error() != nil {
 			fmt.Printf("Could not subscribe: %s\n", token.Error())
@@ -58,6 +60,7 @@ func subscribe(cmd *cobra.Command, args []string) {
 	go func() {
 		<-c
 		fmt.Println("signal received, exiting")
+		// TODO: should get out of the loop and do a Disconect
 		os.Exit(0)
 	}()
 
@@ -65,7 +68,9 @@ func subscribe(cmd *cobra.Command, args []string) {
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		os.Exit(1)
-	} else {
+	}
+
+	if optVerbose
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 

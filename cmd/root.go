@@ -37,6 +37,7 @@ import (
 var VERSION string
 var COMMIT string
 
+var optVerbose bool
 var cfgFile string
 var optBroker string
 var optServer string
@@ -115,10 +116,20 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 			Qos = viper.GetInt(key)
 		}
 	}
+	if qos < 0 || qos > 2 {
+		fmt.Println("qos value must or 0, 1 or 2")
+		os.Exit(1)
+	}
 
 	if !cmd.Parent().PersistentFlags().Lookup("keepalive").Changed {
 		if key := getCorrectConfigKey(broker, "keepalive"); key != "" {
 			optKeepAlive = viper.GetInt(key)
+		}
+	}
+
+	if !cmd.Parent().PersistentFlags().Lookup("topic").Changed {
+		if key := getCorrectConfigKey(broker, "topic"); key != "" {
+			Topic = viper.GetString(key)
 		}
 	}
 
@@ -143,19 +154,6 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 		optClientId = fmt.Sprintf("%s%s", optClientPrefix, strconv.Itoa(os.Getpid()))
 	}
 
-	if cmd.Parent().PersistentFlags().Lookup("verbose").Changed {
-		fmt.Println("Connecting to server with following parameters")
-		if optBroker != "" {
-			fmt.Println(". From broker config: ", optBroker)
-		}
-		fmt.Println("  Server: ", optServer)
-		fmt.Println("  ClientId: ", optClientId)
-		fmt.Println("  Username: ", optUsername)
-		fmt.Println("  Password: ", optPassword)
-		fmt.Println("  QOS: ", Qos)
-		fmt.Println("  Retain: ", Retain)
-	}
-
 	connOpts := &MQTT.ClientOptions{
 		ClientID:             optClientId,
 		CleanSession:         cleanSession,
@@ -168,6 +166,23 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 	connOpts.AddBroker(optServer)
 
 	return connOpts
+}
+
+// PrintConnectionInfo will so all the args used if verbose is on
+func PrintConnectionInfo() {
+	if optVerbose {
+		fmt.Println("Connecting to server with following parameters")
+		if optBroker != "" {
+			fmt.Println(". From broker config: ", optBroker)
+		}
+		fmt.Println("  Server: ", optServer)
+		fmt.Println("  ClientId: ", optClientId)
+		fmt.Println("  Username: ", optUsername)
+		fmt.Println("  Password: ", optPassword)
+		fmt.Println("  QOS: ", Qos)
+		fmt.Println("  Retain: ", Retain)
+		fmt.Println("  Topic: ", Topic)
+	}
 }
 
 func init() {
@@ -184,7 +199,7 @@ func init() {
 	rootCmd.PersistentFlags().IntVar(&Qos, "qos", 1, "qos setting")
 	rootCmd.PersistentFlags().IntVarP(&optKeepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
 	rootCmd.PersistentFlags().StringVarP(&optBroker, "broker", "b", "", "broker configuration")
-	rootCmd.PersistentFlags().Bool("verbose", false, "give more verbose information")
+	rootCmd.PersistentFlags().BoolVar(&optVerbose, "verbose", false, "give more verbose information")
 
 	// TODO: this should move to sub-command so it has different defaults
 	rootCmd.PersistentFlags().StringVar(&Topic, "topic", "#", "mqtt topic")
