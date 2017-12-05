@@ -24,6 +24,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
+	"log"
 	"strconv"
 	"time"
 
@@ -116,7 +117,7 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 			Qos = viper.GetInt(key)
 		}
 	}
-	if qos < 0 || qos > 2 {
+	if Qos < 0 || Qos > 2 {
 		fmt.Println("qos value must or 0, 1 or 2")
 		os.Exit(1)
 	}
@@ -160,7 +161,7 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 		Username:             optUsername,
 		Password:             optPassword,
 		MaxReconnectInterval: 1 * time.Second,
-		KeepAlive:            time.Duration(optKeepAlive),
+		KeepAlive:            int64(optKeepAlive),
 		TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
 	}
 	connOpts.AddBroker(optServer)
@@ -196,7 +197,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&optPassword, "password", "", "password for accessing MQTT")
 	rootCmd.PersistentFlags().StringVarP(&optClientId, "id", "i", "", "id to use for this client (default is generated from client-prefix)")
 	rootCmd.PersistentFlags().StringVar(&optClientPrefix, "client-prefix", "zap_", "prefix to use to generate a client id if none is specified")
-	rootCmd.PersistentFlags().IntVar(&Qos, "qos", 1, "qos setting")
+	rootCmd.PersistentFlags().IntVar(&Qos, "qos", 0, "qos setting")
 	rootCmd.PersistentFlags().IntVarP(&optKeepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
 	rootCmd.PersistentFlags().StringVarP(&optBroker, "broker", "b", "", "broker configuration")
 	rootCmd.PersistentFlags().BoolVar(&optVerbose, "verbose", false, "give more verbose information")
@@ -228,4 +229,20 @@ func initConfig() {
 	if err != nil {
 		fmt.Printf("Error reading config file: %s\n", err)
 	}
+
+	// Uncomment these to turn on debugging from within the mqtt library.
+	MQTT.ERROR = log.New(os.Stdout,
+        "ERROR: ",
+        log.Ldate|log.Ltime|log.Lshortfile)
+	MQTT.CRITICAL = log.New(os.Stdout,
+        "CRITICAL: ",
+        log.Ldate|log.Ltime|log.Lshortfile)
+	// MQTT.WARN = log.New(os.Stdout,
+ //        "WARN: ",
+ //        log.Ldate|log.Ltime|log.Lshortfile)
+	// MQTT.DEBUG = log.New(os.Stdout,
+ //        "DEBUG: ",
+ //        log.Ldate|log.Ltime|log.Lshortfile)
+
+
 }

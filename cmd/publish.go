@@ -91,7 +91,9 @@ func publish(cmd *cobra.Command, args []string) {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		os.Exit(1)
 	}
-	if optVerbose
+	defer client.Disconnect(250)
+
+	if optVerbose {
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 

@@ -22,11 +22,10 @@ package cmd
 
 import (
 	"fmt"
-	//"log"
+	"time"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
@@ -34,6 +33,8 @@ import (
 )
 
 var cleanSession bool
+var mqInbound = make(chan [2]string)
+var done = false
 
 // subscribeCmd represents the subscribe command
 var subscribeCmd = &cobra.Command{
@@ -44,44 +45,59 @@ var subscribeCmd = &cobra.Command{
 }
 
 func subscribe(cmd *cobra.Command, args []string) {
+
 	connOpts := ParseBrokerInfo(cmd, args)
 
 	PrintConnectionInfo()
-
-	connOpts.OnConnect = func(c MQTT.Client) {
-		if token := c.Subscribe(Topic, byte(Qos), onMessageReceived); token.Wait() && token.Error() != nil {
-			fmt.Printf("Could not subscribe: %s\n", token.Error())
-			os.Exit(1)
-		}
-	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		fmt.Println("signal received, exiting")
-		// TODO: should get out of the loop and do a Disconect
-		os.Exit(0)
+		done = true
+		//close(mqInbound)
 	}()
+
+	  var conErr error
+	  defer func(){
+	    if conErr != nil {
+	      os.Exit(1)
+	    }
+	  }()
 
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		fmt.Printf("Could not connect: %s\n", token.Error())
-		os.Exit(1)
+		conErr = token.Error()
+		fmt.Printf("Could not connect: %s\n", conErr)
+		return
 	}
+	defer client.Disconnect(250)
 
-	if optVerbose
+	if optVerbose {
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
+	if token := client.Subscribe(statsTopic, byte(Qos), subscriptionHandler); token.Wait() && token.Error() != nil {
+		conErr = token.Error()
+		fmt.Printf("Could not subscribe: %s\n", conErr)
+		return
+	} else {
+		fmt.Println("subscription started")
+	}
+	defer client.Unsubscribe(Topic)
+
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Millisecond * 10)
+		if done {
+			break
+		}
 	}
 
 }
 
-func onMessageReceived(client MQTT.Client, message MQTT.Message) {
-	fmt.Printf("Received message on topic: %s\nMessage: %s\n", message.Topic(), message.Payload())
+func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
+		fmt.Printf("Received message on topic: %s\nMessage: %s\n", msg.Topic(), msg.Payload())
 }
 
 func init() {
@@ -91,5 +107,5 @@ func init() {
 	// TODO: -N option - do not print an extra newline at end of message
 	// TODO: -R option - not even sure about this one
 	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
-	publishCmd.Flags().BoolVar(&cleanSession, "disable-clean-session", false, "send queued up messages if mqtt has persistence - be sure to set client id")
+	publishCmd.Flags().BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
 }

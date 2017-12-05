@@ -66,7 +66,7 @@ func stats(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if optVerbose
+	if optVerbose {
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
