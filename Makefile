@@ -6,9 +6,21 @@ COMMIT=$(shell git rev-parse HEAD)
 SOURCES := $(shell find main.go cmd viewstats -name '*.go')
 
 LDFLAGS := -ldflags "-X main.VERSION=$(VERSION) -X main.COMMIT=${COMMIT}"
+PLATFORMS=darwin linux windows
+ARCHITECTURES=386 amd64
+RELEASE_ROOT=release
 
 $(BINARY): $(SOURCES)
 	@go build ${LDFLAGS} -o ${BINARY} main.go
+
+$(RELEASE_ROOT)/darwin-amd64/$(BINARY): $(SOURCES)
+	$(shell export GOOS=darwin; export GOARCH=amd64; go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/darwin-amd64/$(BINARY))
+
+$(RELEASE_ROOT)/linux-amd64/$(BINARY): $(SOURCES)
+	$(shell export GOOS=linux; export GOARCH=amd64; go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/linux-amd64/$(BINARY))
+
+$(RELEASE_ROOT)/windows-amd64/$(BINARY).exe: $(SOURCES)
+	$(shell export GOOS=windows; export GOARCH=amd64; go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/windows-amd64/$(BINARY).exe)
 
 .PHONY: setup
 setup:  ## Creates vendor directory with all dependencies
@@ -17,10 +29,14 @@ setup:  ## Creates vendor directory with all dependencies
 .PHONY: build
 build: $(BINARY)
 
+.PHONY: build_all
+build_all: $(RELEASE_ROOT)/darwin-amd64/$(BINARY) $(RELEASE_ROOT)/linux-amd64/$(BINARY) $(RELEASE_ROOT)/windows-amd64/$(BINARY).exe
+
 .PHONY: clean
 clean:  ## Clean up any generated files
 	@if [ -f ${BINARY} ] ; then rm ${BINARY} ; fi
 	@if [ -f reports ] ; then rm reports ; fi
+	@if [ -f release ] ; then rm release ; fi
 
 .PHONY: lint
 lint:  ## Run golint and go fmt on source base
