@@ -86,10 +86,18 @@ func publish(cmd *cobra.Command, args []string) {
 
 	PrintConnectionInfo()
 
+	exitWithError := false
+	defer func() {
+		if exitWithError {
+			os.Exit(1)
+		}
+	}()
+
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
-		os.Exit(1)
+		exitWithError = true
+		return
 	}
 	defer client.Disconnect(250)
 
@@ -113,13 +121,15 @@ func publish(cmd *cobra.Command, args []string) {
 			buf, err := ioutil.ReadFile(optFilePath) // just pass the file name
 			if err != nil {
 				fmt.Print("error reading file: \"%s\"\n", err)
-				os.Exit(1)
+				exitWithError = true
+				return
 			}
 
 			client.Publish(optTopic, byte(optQos), optRetain, string(buf))
 		} else {
 			fmt.Printf("the file \"%s\" does not exist\n", optFilePath)
-			os.Exit(1)
+			exitWithError = true
+			return
 		}
 	}
 
@@ -131,15 +141,20 @@ func publish(cmd *cobra.Command, args []string) {
 			message, err := stdin.ReadString('\n')
 			if err == io.EOF {
 				fmt.Printf("message sent or EOF\n")
-				os.Exit(0)
+				break
 			}
 			client.Publish(optTopic, byte(optQos), optRetain, message)
 		}
 	}
 
 	if cmd.Flags().Lookup("stdin-file").Changed {
-		fmt.Println("not implemented yet")
-		os.Exit(1)
+		data, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Printf("error reading file: %s\n", err)
+			exitWithError = true
+			return
+		}
+		client.Publish(optTopic, byte(optQos), optRetain, data)
 	}
 
 	fmt.Printf("message sent\n")
