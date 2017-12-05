@@ -56,7 +56,6 @@ func subscribe(cmd *cobra.Command, args []string) {
 		<-c
 		fmt.Println("signal received, exiting")
 		done = true
-		//close(mqInbound)
 	}()
 
 	var conErr error
@@ -78,14 +77,12 @@ func subscribe(cmd *cobra.Command, args []string) {
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
-	if token := client.Subscribe(statsTopic, byte(Qos), subscriptionHandler); token.Wait() && token.Error() != nil {
+	if token := client.Subscribe(optTopic, byte(optQos), subscriptionHandler); token.Wait() && token.Error() != nil {
 		conErr = token.Error()
 		fmt.Printf("Could not subscribe: %s\n", conErr)
 		return
-	} else {
-		fmt.Println("subscription started")
 	}
-	defer client.Unsubscribe(Topic)
+	defer client.Unsubscribe(optTopic)
 
 	for {
 		time.Sleep(time.Millisecond * 10)

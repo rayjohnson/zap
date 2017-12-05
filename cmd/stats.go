@@ -51,7 +51,7 @@ func stats(cmd *cobra.Command, args []string) {
 	mqInbound := make(chan [2]string)
 
 	connOpts.OnConnect = func(c MQTT.Client) {
-		if token := c.Subscribe(statsTopic, byte(Qos), func(client MQTT.Client, msg MQTT.Message) {
+		if token := c.Subscribe(statsTopic, byte(optQos), func(client MQTT.Client, msg MQTT.Message) {
 			mqInbound <- [2]string{msg.Topic(), string(msg.Payload())}
 		}); token.Wait() && token.Error() != nil {
 			// TODO: if this happens after StartStatsDisplay then we will mangle the terminal

@@ -43,9 +43,9 @@ data coming from stdin.`,
 	Run: publish,
 }
 
-var Message string
-var FilePath string
-var Retain bool
+var optMessage string
+var optFilePath string
+var optRetain bool
 
 func validatePublishOptions(cmd *cobra.Command) {
 	var count = 0
@@ -99,26 +99,26 @@ func publish(cmd *cobra.Command, args []string) {
 
 	if cmd.Flags().Lookup("message").Changed {
 		// send a single message
-		client.Publish(Topic, byte(Qos), Retain, Message)
+		client.Publish(optTopic, byte(optQos), optRetain, optMessage)
 	}
 
 	if cmd.Flags().Lookup("null-message").Changed {
 		// send a null message (actually an empty string)
-		client.Publish(Topic, byte(Qos), Retain, "")
+		client.Publish(optTopic, byte(optQos), optRetain, "")
 	}
 
 	if cmd.Flags().Lookup("file").Changed {
 		// send entire file as message
-		if _, err := os.Stat(FilePath); !os.IsNotExist(err) {
-			buf, err := ioutil.ReadFile(FilePath) // just pass the file name
+		if _, err := os.Stat(optFilePath); !os.IsNotExist(err) {
+			buf, err := ioutil.ReadFile(optFilePath) // just pass the file name
 			if err != nil {
 				fmt.Print("error reading file: \"%s\"\n", err)
 				os.Exit(1)
 			}
 
-			client.Publish(Topic, byte(Qos), Retain, string(buf))
+			client.Publish(optTopic, byte(optQos), optRetain, string(buf))
 		} else {
-			fmt.Printf("the file \"%s\" does not exist\n", FilePath)
+			fmt.Printf("the file \"%s\" does not exist\n", optFilePath)
 			os.Exit(1)
 		}
 	}
@@ -133,7 +133,7 @@ func publish(cmd *cobra.Command, args []string) {
 				fmt.Printf("message sent or EOF\n")
 				os.Exit(0)
 			}
-			client.Publish(Topic, byte(Qos), Retain, message)
+			client.Publish(optTopic, byte(optQos), optRetain, message)
 		}
 	}
 
@@ -150,8 +150,8 @@ func init() {
 
 	publishCmd.Flags().BoolP("stdin-line", "l", false, "send stdin data as message with each newline is a new message")
 	publishCmd.Flags().BoolP("stdin-file", "s", false, "read stdin until EOF and send all as one message")
-	publishCmd.Flags().StringVarP(&Message, "message", "m", "", "send the argument to the topic and exit")
-	publishCmd.Flags().StringVarP(&FilePath, "file", "f", "", "send contents of the file to the topic and exit")
-	publishCmd.Flags().BoolVarP(&Retain, "retain", "r", false, "retain as the last good message")
+	publishCmd.Flags().StringVarP(&optMessage, "message", "m", "", "send the argument to the topic and exit")
+	publishCmd.Flags().StringVarP(&optFilePath, "file", "f", "", "send contents of the file to the topic and exit")
+	publishCmd.Flags().BoolVarP(&optRetain, "retain", "r", false, "retain as the last good message")
 	publishCmd.Flags().BoolP("null-message", "n", false, "send a null (zero length) message")
 }

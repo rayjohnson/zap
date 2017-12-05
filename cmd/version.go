@@ -26,13 +26,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version string
+var revision string
+
 var genAutoComplete bool
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Shows version information about zap",
-	Long: `SHows version information about zap
+	Long: `Shows version information about zap
 
 Run with the --generate-auto-complete option and a file named
 zap.sh will be generated for use in autocomplete scripts`,
@@ -42,7 +45,7 @@ zap.sh will be generated for use in autocomplete scripts`,
 			return
 		}
 
-		fmt.Println("zap version " + VERSION + ", Revision: " + COMMIT)
+		fmt.Println("zap version " + version + ", Revision: " + revision)
 	},
 }
 

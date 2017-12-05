@@ -23,9 +23,10 @@ package main
 import "github.com/rayjohnson/zap/cmd"
 
 var (
-	// These are set during build
-	VERSION = "0.0.1"
-	COMMIT  = "blah"
+	// VERSION will be set at build time from the VERSION file
+	VERSION string
+	// COMMIT will come from the Makefile and contains the git rev
+	COMMIT string
 )
 
 func main() {

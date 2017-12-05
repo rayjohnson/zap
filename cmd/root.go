@@ -35,22 +35,19 @@ import (
 	"github.com/spf13/viper"
 )
 
-var VERSION string
-var COMMIT string
-
 var optVerbose bool
 var cfgFile string
 var optBroker string
 var optServer string
 var optUsername string
 var optPassword string
-var optClientId string
+var optClientID string
 var optClientPrefix string
-var Qos int
+var optQos int
 var optKeepAlive int
 
 // TODO: move topic to sub-command - each needs different defaults
-var Topic string
+var optTopic string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -64,9 +61,9 @@ MQTT message bus`,
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(version string, commit string) {
-	VERSION = version
-	COMMIT = commit
+func Execute(ver string, rev string) {
+	version = ver
+	revision = rev
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -114,10 +111,10 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 
 	if !cmd.Parent().PersistentFlags().Lookup("qos").Changed {
 		if key := getCorrectConfigKey(broker, "qos"); key != "" {
-			Qos = viper.GetInt(key)
+			optQos = viper.GetInt(key)
 		}
 	}
-	if Qos < 0 || Qos > 2 {
+	if optQos < 0 || optQos > 2 {
 		fmt.Println("qos value must or 0, 1 or 2")
 		os.Exit(1)
 	}
@@ -130,7 +127,7 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 
 	if !cmd.Parent().PersistentFlags().Lookup("topic").Changed {
 		if key := getCorrectConfigKey(broker, "topic"); key != "" {
-			Topic = viper.GetString(key)
+			optTopic = viper.GetString(key)
 		}
 	}
 
@@ -142,21 +139,21 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 
 	if !cmd.Parent().PersistentFlags().Lookup("id").Changed {
 		if key := getCorrectConfigKey(broker, "id"); key != "" {
-			optClientId = viper.GetString(key)
+			optClientID = viper.GetString(key)
 		}
 	}
 
 	// If client id is not set we will generate one here
-	if optClientId == "" {
+	if optClientID == "" {
 		if optClientPrefix == "" {
 			optClientPrefix = "zap_"
 		}
 
-		optClientId = fmt.Sprintf("%s%s", optClientPrefix, strconv.Itoa(os.Getpid()))
+		optClientID = fmt.Sprintf("%s%s", optClientPrefix, strconv.Itoa(os.Getpid()))
 	}
 
 	connOpts := &MQTT.ClientOptions{
-		ClientID:             optClientId,
+		ClientID:             optClientID,
 		CleanSession:         cleanSession,
 		Username:             optUsername,
 		Password:             optPassword,
@@ -177,12 +174,12 @@ func PrintConnectionInfo() {
 			fmt.Println(". From broker config: ", optBroker)
 		}
 		fmt.Println("  Server: ", optServer)
-		fmt.Println("  ClientId: ", optClientId)
+		fmt.Println("  ClientId: ", optClientID)
 		fmt.Println("  Username: ", optUsername)
 		fmt.Println("  Password: ", optPassword)
-		fmt.Println("  QOS: ", Qos)
-		fmt.Println("  Retain: ", Retain)
-		fmt.Println("  Topic: ", Topic)
+		fmt.Println("  QOS: ", optQos)
+		fmt.Println("  Retain: ", optRetain)
+		fmt.Println("  Topic: ", optTopic)
 	}
 }
 
@@ -195,15 +192,15 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&optServer, "server", "tcp://127.0.0.1:1883", "location of MQTT server")
 	rootCmd.PersistentFlags().StringVar(&optUsername, "username", "", "username for accessing MQTT")
 	rootCmd.PersistentFlags().StringVar(&optPassword, "password", "", "password for accessing MQTT")
-	rootCmd.PersistentFlags().StringVarP(&optClientId, "id", "i", "", "id to use for this client (default is generated from client-prefix)")
+	rootCmd.PersistentFlags().StringVarP(&optClientID, "id", "i", "", "id to use for this client (default is generated from client-prefix)")
 	rootCmd.PersistentFlags().StringVar(&optClientPrefix, "client-prefix", "zap_", "prefix to use to generate a client id if none is specified")
-	rootCmd.PersistentFlags().IntVar(&Qos, "qos", 0, "qos setting")
+	rootCmd.PersistentFlags().IntVar(&optQos, "qos", 0, "qos setting")
 	rootCmd.PersistentFlags().IntVarP(&optKeepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
 	rootCmd.PersistentFlags().StringVarP(&optBroker, "broker", "b", "", "broker configuration")
 	rootCmd.PersistentFlags().BoolVar(&optVerbose, "verbose", false, "give more verbose information")
 
 	// TODO: this should move to sub-command so it has different defaults
-	rootCmd.PersistentFlags().StringVar(&Topic, "topic", "#", "mqtt topic")
+	rootCmd.PersistentFlags().StringVar(&optTopic, "topic", "#", "mqtt topic")
 }
 
 // initConfig reads in config file if set.
