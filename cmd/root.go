@@ -23,8 +23,8 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
-	"os"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -232,17 +232,16 @@ func initConfig() {
 
 	// Uncomment these to turn on debugging from within the mqtt library.
 	MQTT.ERROR = log.New(os.Stdout,
-        "ERROR: ",
-        log.Ldate|log.Ltime|log.Lshortfile)
+		"ERROR: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
 	MQTT.CRITICAL = log.New(os.Stdout,
-        "CRITICAL: ",
-        log.Ldate|log.Ltime|log.Lshortfile)
+		"CRITICAL: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
 	// MQTT.WARN = log.New(os.Stdout,
- //        "WARN: ",
- //        log.Ldate|log.Ltime|log.Lshortfile)
+	//        "WARN: ",
+	//        log.Ldate|log.Ltime|log.Lshortfile)
 	// MQTT.DEBUG = log.New(os.Stdout,
- //        "DEBUG: ",
- //        log.Ldate|log.Ltime|log.Lshortfile)
-
+	//        "DEBUG: ",
+	//        log.Ldate|log.Ltime|log.Lshortfile)
 
 }

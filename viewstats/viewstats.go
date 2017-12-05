@@ -94,77 +94,55 @@ func StartStatsDisplay(theChan chan [2]string) {
 // AddStat parses the MQTT topics and puts the latest
 // values in a hash that is displayed in the UI
 func AddStat(topic string, data string) {
-	// TODO: make this a switch statement
-	if topic == "$SYS/broker/load/bytes/received" {
+	switch topic {
+	case "$SYS/broker/load/bytes/received":
 		mqttData["Load Bytes Received"] = data
-	}
-	if topic == "$SYS/broker/load/bytes/sent" {
+	case "$SYS/broker/load/bytes/sent":
 		mqttData["Load Bytes Sent"] = data
-	}
-	if topic == "$SYS/broker/subscriptions/count" {
+	case "$SYS/broker/subscriptions/count":
 		mqttData["Subscriptions Count"] = data
-	}
-	if topic == "$SYS/broker/time" {
+	case "$SYS/broker/time":
 		mqttData["Broker Time"] = data
-	}
-	if topic == "$SYS/broker/uptime" {
+
+	case "$SYS/broker/uptime":
 		mqttData["Broker Uptime"] = data
-	}
-	if topic == "$SYS/broker/version" {
+	case "$SYS/broker/version":
 		mqttData["Broker Version"] = data
-	}
 
-	if topic == "$SYS/broker/clients/total" {
+	case "$SYS/broker/clients/total":
 		mqttData["Clients Total"] = data
-	}
-	if topic == "$SYS/broker/clients/connected" {
+	case "$SYS/broker/clients/connected":
 		mqttData["Clients Connected"] = data
-	}
-	if topic == "$SYS/broker/clients/disconnected" {
+	case "$SYS/broker/clients/disconnected":
 		mqttData["Clients Disconnected"] = data
-	}
-	if topic == "$SYS/broker/clients/maximum" {
+	case "$SYS/broker/clients/maximum":
 		mqttData["Clients Maximum"] = data
-	}
-	if topic == "$SYS/broker/clients/expired" {
+	case "$SYS/broker/clients/expired":
 		mqttData["Clients Expired"] = data
-	}
 
-	if topic == "$SYS/broker/heap/current size" {
+	case "$SYS/broker/heap/current size":
 		mqttData["Heap Current Size"] = data
-	}
-	if topic == "$SYS/broker/heap/maximum size" {
+	case "$SYS/broker/heap/maximum size":
 		mqttData["Heap Maximum Size"] = data
-	}
 	// TODO get these: $SYS/broker/load/connections/+
 	// they come in sets of 4 or something
 
-	if topic == "$SYS/broker/messages/received" {
+	case "$SYS/broker/messages/received":
 		mqttData["Messages Received"] = data
-	}
-	if topic == "$SYS/broker/messages/sent" {
+	case "$SYS/broker/messages/sent":
 		mqttData["Messages Sent"] = data
-	}
-	if topic == "$SYS/broker/messages/inflight" {
+	case "$SYS/broker/messages/inflight":
 		mqttData["Messages Inflight"] = data
-	}
-	if topic == "$SYS/broker/messages/stored" {
+	case "$SYS/broker/messages/stored":
 		mqttData["Messages Stored"] = data
-	}
 
-	if topic == "$SYS/broker/publish/messages/dropped" {
+	case "$SYS/broker/publish/messages/dropped":
 		mqttData["Messages Publish Dropped"] = data
-	}
-	if topic == "$SYS/broker/messages/publish/sent" {
+	case "$SYS/broker/messages/publish/sent":
 		mqttData["Messages Publish Sent"] = data
-	}
-	if topic == "$SYS/broker/messages/publish/received" {
+	case "$SYS/broker/messages/publish/received":
 		mqttData["Messages Publish Received"] = data
-	}
-	if topic == "$SYS/broker/messages/retained/count" {
-		mqttData["Messages Retained Count"] = data
-	}
-	if topic == "$SYS/broker/retained messages/count" {
+	case "$SYS/broker/messages/retained/count", "$SYS/broker/retained messages/count":
 		mqttData["Messages Retained Count"] = data
 	}
 }

@@ -22,10 +22,10 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
@@ -59,12 +59,12 @@ func subscribe(cmd *cobra.Command, args []string) {
 		//close(mqInbound)
 	}()
 
-	  var conErr error
-	  defer func(){
-	    if conErr != nil {
-	      os.Exit(1)
-	    }
-	  }()
+	var conErr error
+	defer func() {
+		if conErr != nil {
+			os.Exit(1)
+		}
+	}()
 
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -97,7 +97,7 @@ func subscribe(cmd *cobra.Command, args []string) {
 }
 
 func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
-		fmt.Printf("Received message on topic: %s\nMessage: %s\n", msg.Topic(), msg.Payload())
+	fmt.Printf("Received message on topic: %s\nMessage: %s\n", msg.Topic(), msg.Payload())
 }
 
 func init() {
