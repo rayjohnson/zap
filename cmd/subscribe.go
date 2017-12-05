@@ -25,8 +25,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 	"text/template"
+	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
@@ -45,7 +45,7 @@ var stdoutTemplate *template.Template
 
 // MqttMessage is the struct passed to the template engine
 type MqttMessage struct {
-	Topic string
+	Topic   string
 	Message string
 }
 
@@ -135,7 +135,6 @@ func init() {
 	rootCmd.AddCommand(subscribeCmd)
 
 	// TODO: add -C, --count option - after count of messages disconnect and exit
-	// TODO: -N option - do not print an extra newline at end of message
 	// TODO: -R option - not even sure about this one
 	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
 	subscribeCmd.Flags().BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
