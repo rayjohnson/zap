@@ -26,15 +26,28 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"text/template"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+const builtinTemplate = "Received message on topic: {{.Topic}}\nMessage: {{.Message}}\n"
 
 var cleanSession bool
 var mqInbound = make(chan [2]string)
 var done = false
+
+var optTemplate string
+var stdoutTemplate *template.Template
+
+// MqttMessage is the struct passed to the template engine
+type MqttMessage struct {
+	Topic string
+	Message string
+}
 
 // subscribeCmd represents the subscribe command
 var subscribeCmd = &cobra.Command{
@@ -49,6 +62,7 @@ func subscribe(cmd *cobra.Command, args []string) {
 	connOpts := ParseBrokerInfo(cmd, args)
 
 	PrintConnectionInfo()
+	stdoutTemplate = getTemplate(cmd)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -94,7 +108,27 @@ func subscribe(cmd *cobra.Command, args []string) {
 }
 
 func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
-	fmt.Printf("Received message on topic: %s\nMessage: %s\n", msg.Topic(), msg.Payload())
+	data := MqttMessage{Topic: msg.Topic(), Message: string(msg.Payload())}
+	err := stdoutTemplate.Execute(os.Stdout, data)
+	if err != nil {
+		fmt.Printf("error using template: %s\n", err)
+	}
+}
+
+func getTemplate(cmd *cobra.Command) *template.Template {
+	if !cmd.Flags().Lookup("template").Changed {
+		if key := getCorrectConfigKey(optBroker, "template"); key != "" {
+			optTemplate = viper.GetString(key)
+		}
+	}
+
+	theTemplate, err := template.New("stdout").Parse(optTemplate)
+	if err != nil {
+		fmt.Printf("error in template: %s\n", err)
+		os.Exit(1)
+	}
+
+	return theTemplate
 }
 
 func init() {
@@ -104,5 +138,6 @@ func init() {
 	// TODO: -N option - do not print an extra newline at end of message
 	// TODO: -R option - not even sure about this one
 	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
-	publishCmd.Flags().BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
+	subscribeCmd.Flags().BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
+	subscribeCmd.Flags().StringVar(&optTemplate, "template", builtinTemplate, "template to use for output to stdout")
 }
