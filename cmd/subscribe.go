@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/signal"
@@ -109,10 +110,14 @@ func subscribe(cmd *cobra.Command, args []string) {
 
 func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
 	data := MqttMessage{Topic: msg.Topic(), Message: string(msg.Payload())}
-	err := stdoutTemplate.Execute(os.Stdout, data)
+
+	var buf bytes.Buffer
+
+	err := stdoutTemplate.Execute(&buf, data)
 	if err != nil {
 		fmt.Printf("error using template: %s\n", err)
 	}
+	fmt.Printf("%s", buf.String())
 }
 
 func getTemplate(cmd *cobra.Command) *template.Template {

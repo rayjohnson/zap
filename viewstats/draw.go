@@ -1,9 +1,9 @@
 package viewstats
 
 import (
-	"time"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/nsf/termbox-go"
 )
