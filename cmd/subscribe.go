@@ -73,28 +73,29 @@ func subscribe(cmd *cobra.Command, args []string) {
 		done = true
 	}()
 
-	var conErr error
+	exitWithError := false
 	defer func() {
-		if conErr != nil {
+		if exitWithError {
 			os.Exit(1)
 		}
 	}()
 
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		conErr = token.Error()
-		fmt.Printf("Could not connect: %s\n", conErr)
+		fmt.Printf("Could not connect: %s\n", token.Error())
+		exitWithError = true
 		return
 	}
 	defer client.Disconnect(250)
+
 
 	if optVerbose {
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
 	if token := client.Subscribe(optTopic, byte(optQos), subscriptionHandler); token.Wait() && token.Error() != nil {
-		conErr = token.Error()
-		fmt.Printf("Could not subscribe: %s\n", conErr)
+		exitWithError = true
+		fmt.Printf("Could not subscribe: %s\n", token.Error())
 		return
 	}
 	defer client.Unsubscribe(optTopic)
