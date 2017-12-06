@@ -21,7 +21,6 @@
 package viewstats
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -144,134 +143,75 @@ func AddStat(topic string, data string) {
 		mqttData["Messages Publish Received"] = data
 	case "$SYS/broker/messages/retained/count", "$SYS/broker/retained messages/count":
 		mqttData["Messages Retained Count"] = data
+
+	case "$SYS/broker/load/messages/received/1min":
+		mqttData["LoadMessagesReceived1min"] = data
+	case "$SYS/broker/load/messages/received/5min":
+		mqttData["LoadMessagesReceived5min"] = data
+	case "$SYS/broker/load/messages/received/15min":
+		mqttData["LoadMessagesReceived15min"] = data
+
+	case "$SYS/broker/load/messages/sent/1min":
+		mqttData["LoadMessagesSent1min"] = data
+	case "$SYS/broker/load/messages/sent/5min":
+		mqttData["LoadMessagesSent5min"] = data
+	case "$SYS/broker/load/messages/sent/15min":
+		mqttData["LoadMessagesSent15min"] = data
+
+	case "$SYS/broker/load/bytes/sent/1min":
+		mqttData["LoadBytesSent1min"] = data
+	case "$SYS/broker/load/bytes/sent/5min":
+		mqttData["LoadBytesSent5min"] = data
+	case "$SYS/broker/load/bytes/sent/15min":
+		mqttData["LoadBytesSent15min"] = data
+
+	case "$SYS/broker/load/bytes/received/1min":
+		mqttData["LoadBytesReceived1min"] = data
+	case "$SYS/broker/load/bytes/received/5min":
+		mqttData["LoadBytesReceived5min"] = data
+	case "$SYS/broker/load/bytes/received/15min":
+		mqttData["LoadBytesReceived15min"] = data
+
+	case "$SYS/broker/load/sockets/1min":
+		mqttData["LoadSockets1min"] = data
+	case "$SYS/broker/load/sockets/5min":
+		mqttData["LoadSockets5min"] = data
+	case "$SYS/broker/load/sockets/15min":
+		mqttData["LoadSockets15min"] = data
+
+	case "$SYS/broker/load/connections/1min":
+		mqttData["LoadConnections1min"] = data
+	case "$SYS/broker/load/connections/5min":
+		mqttData["LoadConnections5min"] = data
+	case "$SYS/broker/load/connections/15min":
+		mqttData["LoadConnections15min"] = data
+
+	case "$SYS/broker/load/publish/received/1min":
+		mqttData["LoadPublishReceived1min"] = data
+	case "$SYS/broker/load/publish/received/5min":
+		mqttData["LoadPublishReceived5min"] = data
+	case "$SYS/broker/load/publish/received/15min":
+		mqttData["LoadPublishReceived15min"] = data
+
+	case "$SYS/broker/load/publish/sent/1min":
+		mqttData["LoadPublishSent1min"] = data
+	case "$SYS/broker/load/publish/sent/5min":
+		mqttData["LoadPublishSent5min"] = data
+	case "$SYS/broker/load/publish/sent/15min":
+		mqttData["LoadPublishSent15min"] = data
+
+	case "$SYS/broker/load/publish/dropped/1min":
+		mqttData["LoadPublishDropped1min"] = data
+	case "$SYS/broker/load/publish/dropped/5min":
+		mqttData["LoadPublishDropped5min"] = data
+	case "$SYS/broker/load/publish/dropped/15min":
+		mqttData["LoadPublishDropped15min"] = data
+
 	}
 }
 
 func init() {
 	startTime = time.Now()
-}
-
-func redrawAll() {
-	termbox.Clear(coldef, coldef)
-	w, h = termbox.Size()
-	half := w / 2
-
-	drawCurrentTime(1, 0)
-
-	curY := 2
-	curY = drawBroker(0, curY)
-	curY++
-	curY = drawClient(0, curY)
-
-	curY = 2
-	curY = drawLoad(half, curY)
-	curY++
-	curY = drawMessages(half, curY)
-
-	termbox.HideCursor()
-
-	termbox.Flush()
-}
-
-func drawBroker(x, y int) int {
-	mid := 19
-	drawTitle(x, y, mid+8, "Broker")
-	y++
-	drawOne(x, y, mid, "Broker Version", mqttData.get("Broker Version"))
-	y++
-	drawOne(x, y, mid, "Broker Time", mqttData.get("Broker Time"))
-	y++
-	drawOne(x, y, mid, "Broker Uptime", mqttData.get("Broker Uptime"))
-	y++
-	drawOne(x, y, mid, "Subscriptions Count", mqttData.get("Subscriptions Count"))
-	y++
-	drawOne(x, y, mid, "Total Bytes Sent", mqttData.get("Bytes Sent"))
-	y++
-	drawOne(x, y, mid, "Total Bytes Received", mqttData.get("Bytes Received"))
-	y++
-
-	return y
-}
-
-func drawLoad(x, y int) int {
-	mid := 14
-	drawTitle(x, y, mid+8, "Load")
-	y++
-	drawOne(x, y, mid, "Heap Current Size", mqttData.get("Heap Current Size"))
-	y++
-	drawOne(x, y, mid, "Heap Maximum Size", mqttData.get("Heap Maximum Size"))
-	y++
-
-	return y
-}
-
-func drawMessages(x, y int) int {
-	mid := 14
-	drawTitle(x, y, mid+8, "Message Stats")
-	y++
-	drawOne(x, y, mid, "Messages Received", mqttData.get("Messages Received"))
-	y++
-	drawOne(x, y, mid, "Messages Sent", mqttData.get("Messages Sent"))
-	y++
-	drawOne(x, y, mid, "Messages In-flight", mqttData.get("Messages Inflight"))
-	y++
-	drawOne(x, y, mid, "Messages Stored", mqttData.get("Messages Stored"))
-	y++
-	y++
-	drawOne(x, y, mid, "Messages Publish Dropped", mqttData.get("Messages Publish Dropped"))
-	y++
-	drawOne(x, y, mid, "Messages Publish Sent", mqttData.get("Messages Publish Sent"))
-	y++
-	drawOne(x, y, mid, "Messages Publish Received", mqttData.get("Messages Publish Received"))
-	y++
-	drawOne(x, y, mid, "Messages Retained Count", mqttData.get("Messages Retained Count"))
-	y++
-
-	return y
-}
-
-func drawClient(x, y int) int {
-	mid := 20
-	drawTitle(x, y, mid+8, "Clients")
-	y++
-	drawOne(x, y, mid, "Clients Total", mqttData.get("Clients Total"))
-	y++
-	drawOne(x, y, mid, "Clients Connected", mqttData.get("Clients Connected"))
-	y++
-	drawOne(x, y, mid, "Clients Disconnected", mqttData.get("Clients Disconnected"))
-	y++
-	drawOne(x, y, mid, "Clients Expired", mqttData.get("Clients Expired"))
-	y++
-	drawOne(x, y, mid, "Clients Maximum", mqttData.get("Clients Maximum"))
-	y++
-
-	return y
-}
-
-func drawTitle(x int, y int, max int, title string) {
-	str := fmt.Sprintf("%-*s", max, title)
-	for i, c := range str {
-		termbox.SetCell(x+i, y, c, coldef+termbox.AttrUnderline, coldef)
-	}
-}
-
-func drawOne(x int, y int, mid int, label string, data string) {
-	s := fmt.Sprintf("%*s : %s", mid, label, data)
-	for i, c := range s {
-		termbox.SetCell(x+i, y, c, coldef, coldef)
-	}
-}
-
-func drawCurrentTime(x, y int) {
-	now := time.Now()
-	since := now.Sub(startTime)
-	h := int(since.Hours())
-	m := int(since.Minutes()) % 60
-	s := int(since.Seconds()) % 60
-	timeStr := fmt.Sprintf("Now:  %-24s  Watching:  %3d:%02d:%02d", now.Format(datePrint), h, m, s)
-	for i, c := range timeStr {
-		termbox.SetCell(x+i, y, c, coldef, coldef)
-	}
 }
 
 func handleEvents(eventChan chan termbox.Event) {
@@ -281,12 +221,10 @@ func handleEvents(eventChan chan termbox.Event) {
 		case termbox.EventKey:
 			switch ev.Key {
 
-			case termbox.KeyEsc:
-				goto endfunc
-			case termbox.KeyCtrlQ:
-				goto endfunc
-			case termbox.KeyCtrlC:
-				goto endfunc
+			case termbox.KeyEsc, termbox.KeyCtrlQ, termbox.KeyCtrlC:
+				doExit = true
+			case 'q', 'Q':
+				doExit = true
 
 			default:
 				if ev.Ch != 0 {
@@ -297,6 +235,4 @@ func handleEvents(eventChan chan termbox.Event) {
 			panic(ev.Err)
 		}
 	}
-endfunc:
-	doExit = true
 }
