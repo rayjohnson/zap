@@ -46,42 +46,41 @@ func stats(cmd *cobra.Command, args []string) {
 	connOpts := ParseBrokerInfo(cmd, args)
 	connOpts.CleanSession = true
 
+	viewstats.ExitStatsViewer = false
 	PrintConnectionInfo()
 
-	mqInbound := make(chan [2]string)
-
-	connOpts.OnConnect = func(c MQTT.Client) {
-		if token := c.Subscribe(statsTopic, byte(optQos), func(client MQTT.Client, msg MQTT.Message) {
-			mqInbound <- [2]string{msg.Topic(), string(msg.Payload())}
-		}); token.Wait() && token.Error() != nil {
-			// TODO: if this happens after StartStatsDisplay then we will mangle the terminal
-			fmt.Printf("Could not subscribe: %s\n", token.Error())
+	exitWithError := false
+	defer func() {
+		if exitWithError {
 			os.Exit(1)
 		}
-	}
+	}()
 
 	client := MQTT.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
-		os.Exit(1)
+		exitWithError = true
+		return
 	}
+	defer client.Disconnect(250)
 
 	if optVerbose {
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
 
-	defer client.Disconnect(250)
-	go viewstats.StartStatsDisplay(mqInbound)
-
-	for {
-		incoming := <-mqInbound
-		viewstats.AddStat(incoming[0], incoming[1])
-		if incoming[0] == "exit now" {
-			break
-		}
-
+	viewstats.PrepViewer()
+	if token := client.Subscribe(statsTopic, byte(optQos), statsHandler); token.Wait() && token.Error() != nil {
+		exitWithError = true
+		fmt.Printf("Could not subscribe: %s\n", token.Error())
+		return
 	}
+	defer client.Unsubscribe(statsTopic)
 
+	viewstats.StartStatsDisplay(mqInbound)
+}
+
+func statsHandler(client MQTT.Client, msg MQTT.Message) {
+	viewstats.AddStat(msg.Topic(), string(msg.Payload()))
 }
 
 func init() {

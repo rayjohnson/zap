@@ -45,7 +45,7 @@ func drawBroker(x, y int) int {
 
 func drawLoad(x, y int) int {
 	mid := 14
-	y = drawLoadTitle(x, y, mid+8)
+	y = drawLoadTitle(x, y, mid+2)
 	y = drawThree(x, y, mid, "Sockets", mqttData["LoadSockets1min"], mqttData["LoadSockets5min"], mqttData["LoadSockets15min"])
 	y = drawThree(x, y, mid, "Connections", mqttData["LoadConnections1min"], mqttData["LoadConnections5min"], mqttData["LoadConnections15min"])
 	y = drawThree(x, y, mid, "Msg Received", mqttData["LoadMessagesReceived1min"], mqttData["LoadMessagesReceived5min"], mqttData["LoadMessagesReceived15min"])
@@ -62,7 +62,7 @@ func drawLoad(x, y int) int {
 }
 
 func drawMessages(x, y int) int {
-	mid := 14
+	mid := 18
 	y = drawTitle(x, y, mid+8, "Message Stats")
 	y = drawOne(x, y, mid, "Messages Received", mqttData.get("Messages Received"))
 	y = drawOne(x, y, mid, "Messages Sent", mqttData.get("Messages Sent"))
@@ -108,7 +108,7 @@ func drawOne(x int, y int, mid int, label string, data string) int {
 }
 
 func drawLoadTitle(x int, y int, max int) int {
-	str := fmt.Sprintf("%-*s  %s %s %s", max, "Load", "1 min", "5 min", "15 min")
+	str := fmt.Sprintf("%-*s  %s  %s %s", max, "Load", "1 min", "5 min", "15 min")
 	for i, c := range str {
 		termbox.SetCell(x+i, y, c, coldef+termbox.AttrUnderline, coldef)
 	}
@@ -130,7 +130,7 @@ func parseLoad(num string) string {
 }
 
 func drawThree(x int, y int, mid int, label string, oneMin string, fiveMin string, fifteenMin string) int {
-	s := fmt.Sprintf("%*s : %s %s %s", mid, label, parseLoad(oneMin), parseLoad(fiveMin), parseLoad(fifteenMin))
+	s := fmt.Sprintf("%*s : %6s %6s %6s", mid, label, parseLoad(oneMin), parseLoad(fiveMin), parseLoad(fifteenMin))
 	for i, c := range s {
 		termbox.SetCell(x+i, y, c, coldef, coldef)
 	}

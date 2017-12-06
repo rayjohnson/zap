@@ -21,6 +21,7 @@
 package viewstats
 
 import (
+	"sync"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -40,22 +41,33 @@ func (d dataHash) get(key string) (result string) {
 }
 
 var mqttData dataHash
+var mqttDataMutex sync.RWMutex
 
 var (
 	startTime time.Time
 
-	w, h   int
-	doExit bool
+	w, h int
 )
+
+// ExitStatsViewer will be set to false by calling package - if set true viewer should end
+var ExitStatsViewer bool
+
+// PrepViewer is called to make sure our hash table exists before AddStat
+func PrepViewer() {
+	mqttData = make(dataHash)
+	mqttDataMutex = sync.RWMutex{}
+	startTime = time.Now()
+}
 
 // StartStatsDisplay sets up the terminal UI to display
 // data.  It will run in an infinite loop until Ctrl-C is hit
 func StartStatsDisplay(theChan chan [2]string) {
+	ExitStatsViewer = false
+
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
 	}
-	mqttData = make(dataHash)
 
 	termbox.SetInputMode(termbox.InputEsc)
 	redrawAll()
@@ -71,15 +83,10 @@ func StartStatsDisplay(theChan chan [2]string) {
 	}()
 
 	// start update (redraw) ticker
-	doExit = false
 	timer := time.Tick(time.Millisecond * 100)
 	for {
-		if doExit {
+		if ExitStatsViewer {
 			termbox.Close()
-
-			exitStr := <-theChan
-			exitStr[0] = "exit now"
-			theChan <- exitStr
 			break
 		}
 
@@ -93,125 +100,128 @@ func StartStatsDisplay(theChan chan [2]string) {
 // AddStat parses the MQTT topics and puts the latest
 // values in a hash that is displayed in the UI
 func AddStat(topic string, data string) {
+	var key string
+
 	switch topic {
 	case "$SYS/broker/load/bytes/received":
-		mqttData["Load Bytes Received"] = data
+		key = "Load Bytes Received"
 	case "$SYS/broker/load/bytes/sent":
-		mqttData["Load Bytes Sent"] = data
+		key = "Load Bytes Sent"
 	case "$SYS/broker/subscriptions/count":
-		mqttData["Subscriptions Count"] = data
+		key = "Subscriptions Count"
 	case "$SYS/broker/time":
-		mqttData["Broker Time"] = data
+		key = "Broker Time"
 
 	case "$SYS/broker/uptime":
-		mqttData["Broker Uptime"] = data
+		key = "Broker Uptime"
 	case "$SYS/broker/version":
-		mqttData["Broker Version"] = data
+		key = "Broker Version"
 
 	case "$SYS/broker/clients/total":
-		mqttData["Clients Total"] = data
+		key = "Clients Total"
 	case "$SYS/broker/clients/connected":
-		mqttData["Clients Connected"] = data
+		key = "Clients Connected"
 	case "$SYS/broker/clients/disconnected":
-		mqttData["Clients Disconnected"] = data
+		key = "Clients Disconnected"
 	case "$SYS/broker/clients/maximum":
-		mqttData["Clients Maximum"] = data
+		key = "Clients Maximum"
 	case "$SYS/broker/clients/expired":
-		mqttData["Clients Expired"] = data
+		key = "Clients Expired"
 
 	case "$SYS/broker/heap/current size":
-		mqttData["Heap Current Size"] = data
+		key = "Heap Current Size"
 	case "$SYS/broker/heap/maximum size":
-		mqttData["Heap Maximum Size"] = data
-	// TODO get these: $SYS/broker/load/connections/+
-	// they come in sets of 4 or something
+		key = "Heap Maximum Size"
 
 	case "$SYS/broker/messages/received":
-		mqttData["Messages Received"] = data
+		key = "Messages Received"
 	case "$SYS/broker/messages/sent":
-		mqttData["Messages Sent"] = data
+		key = "Messages Sent"
 	case "$SYS/broker/messages/inflight":
-		mqttData["Messages Inflight"] = data
+		key = "Messages Inflight"
 	case "$SYS/broker/messages/stored":
-		mqttData["Messages Stored"] = data
+		key = "Messages Stored"
 
 	case "$SYS/broker/publish/messages/dropped":
-		mqttData["Messages Publish Dropped"] = data
+		key = "Messages Publish Dropped"
 	case "$SYS/broker/messages/publish/sent":
-		mqttData["Messages Publish Sent"] = data
+		key = "Messages Publish Sent"
 	case "$SYS/broker/messages/publish/received":
-		mqttData["Messages Publish Received"] = data
+		key = "Messages Publish Received"
 	case "$SYS/broker/messages/retained/count", "$SYS/broker/retained messages/count":
-		mqttData["Messages Retained Count"] = data
+		key = "Messages Retained Count"
 
 	case "$SYS/broker/load/messages/received/1min":
-		mqttData["LoadMessagesReceived1min"] = data
+		key = "LoadMessagesReceived1min"
 	case "$SYS/broker/load/messages/received/5min":
-		mqttData["LoadMessagesReceived5min"] = data
+		key = "LoadMessagesReceived5min"
 	case "$SYS/broker/load/messages/received/15min":
-		mqttData["LoadMessagesReceived15min"] = data
+		key = "LoadMessagesReceived15min"
 
 	case "$SYS/broker/load/messages/sent/1min":
-		mqttData["LoadMessagesSent1min"] = data
+		key = "LoadMessagesSent1min"
 	case "$SYS/broker/load/messages/sent/5min":
-		mqttData["LoadMessagesSent5min"] = data
+		key = "LoadMessagesSent5min"
 	case "$SYS/broker/load/messages/sent/15min":
-		mqttData["LoadMessagesSent15min"] = data
+		key = "LoadMessagesSent15min"
 
 	case "$SYS/broker/load/bytes/sent/1min":
-		mqttData["LoadBytesSent1min"] = data
+		key = "LoadBytesSent1min"
 	case "$SYS/broker/load/bytes/sent/5min":
-		mqttData["LoadBytesSent5min"] = data
+		key = "LoadBytesSent5min"
 	case "$SYS/broker/load/bytes/sent/15min":
-		mqttData["LoadBytesSent15min"] = data
+		key = "LoadBytesSent15min"
 
 	case "$SYS/broker/load/bytes/received/1min":
-		mqttData["LoadBytesReceived1min"] = data
+		key = "LoadBytesReceived1min"
 	case "$SYS/broker/load/bytes/received/5min":
-		mqttData["LoadBytesReceived5min"] = data
+		key = "LoadBytesReceived5min"
 	case "$SYS/broker/load/bytes/received/15min":
-		mqttData["LoadBytesReceived15min"] = data
+		key = "LoadBytesReceived15min"
 
 	case "$SYS/broker/load/sockets/1min":
-		mqttData["LoadSockets1min"] = data
+		key = "LoadSockets1min"
 	case "$SYS/broker/load/sockets/5min":
-		mqttData["LoadSockets5min"] = data
+		key = "LoadSockets5min"
 	case "$SYS/broker/load/sockets/15min":
-		mqttData["LoadSockets15min"] = data
+		key = "LoadSockets15min"
 
 	case "$SYS/broker/load/connections/1min":
-		mqttData["LoadConnections1min"] = data
+		key = "LoadConnections1min"
 	case "$SYS/broker/load/connections/5min":
-		mqttData["LoadConnections5min"] = data
+		key = "LoadConnections5min"
 	case "$SYS/broker/load/connections/15min":
-		mqttData["LoadConnections15min"] = data
+		key = "LoadConnections15min"
 
 	case "$SYS/broker/load/publish/received/1min":
-		mqttData["LoadPublishReceived1min"] = data
+		key = "LoadPublishReceived1min"
 	case "$SYS/broker/load/publish/received/5min":
-		mqttData["LoadPublishReceived5min"] = data
+		key = "LoadPublishReceived5min"
 	case "$SYS/broker/load/publish/received/15min":
-		mqttData["LoadPublishReceived15min"] = data
+		key = "LoadPublishReceived15min"
 
 	case "$SYS/broker/load/publish/sent/1min":
-		mqttData["LoadPublishSent1min"] = data
+		key = "LoadPublishSent1min"
 	case "$SYS/broker/load/publish/sent/5min":
-		mqttData["LoadPublishSent5min"] = data
+		key = "LoadPublishSent5min"
 	case "$SYS/broker/load/publish/sent/15min":
-		mqttData["LoadPublishSent15min"] = data
+		key = "LoadPublishSent15min"
 
 	case "$SYS/broker/load/publish/dropped/1min":
-		mqttData["LoadPublishDropped1min"] = data
+		key = "LoadPublishDropped1min"
 	case "$SYS/broker/load/publish/dropped/5min":
-		mqttData["LoadPublishDropped5min"] = data
+		key = "LoadPublishDropped5min"
 	case "$SYS/broker/load/publish/dropped/15min":
-		mqttData["LoadPublishDropped15min"] = data
-
+		key = "LoadPublishDropped15min"
 	}
-}
 
-func init() {
-	startTime = time.Now()
+	// TODO: this may need to be a channel the UI side reads from
+	// still getting a race condition here
+	if key != "" {
+		mqttDataMutex.Lock()
+		mqttData[key] = data
+		mqttDataMutex.Unlock()
+	}
 }
 
 func handleEvents(eventChan chan termbox.Event) {
@@ -222,13 +232,11 @@ func handleEvents(eventChan chan termbox.Event) {
 			switch ev.Key {
 
 			case termbox.KeyEsc, termbox.KeyCtrlQ, termbox.KeyCtrlC:
-				doExit = true
-			case 'q', 'Q':
-				doExit = true
+				ExitStatsViewer = true
 
 			default:
-				if ev.Ch != 0 {
-					// edit_box.InsertRune(ev.Ch)
+				if ev.Ch == 'q' || ev.Ch == 'Q' {
+					ExitStatsViewer = true
 				}
 			}
 		case termbox.EventError:

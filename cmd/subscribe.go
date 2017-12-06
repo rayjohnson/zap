@@ -88,7 +88,6 @@ func subscribe(cmd *cobra.Command, args []string) {
 	}
 	defer client.Disconnect(250)
 
-
 	if optVerbose {
 		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
 	}
