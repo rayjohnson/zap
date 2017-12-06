@@ -144,7 +144,7 @@ func drawCurrentTime(x, y int) {
 	h := int(since.Hours())
 	m := int(since.Minutes()) % 60
 	s := int(since.Seconds()) % 60
-	timeStr := fmt.Sprintf("Now:  %-24s  Watching:  %3d:%02d:%02d", now.Format(datePrint), h, m, s)
+	timeStr := fmt.Sprintf("Now:  %-24s  Watching:  %3d:%02d:%02d  [Q] to quit", now.Format(datePrint), h, m, s)
 	for i, c := range timeStr {
 		termbox.SetCell(x+i, y, c, coldef, coldef)
 	}

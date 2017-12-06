@@ -76,7 +76,7 @@ func stats(cmd *cobra.Command, args []string) {
 	}
 	defer client.Unsubscribe(statsTopic)
 
-	viewstats.StartStatsDisplay(mqInbound)
+	viewstats.StartStatsDisplay()
 }
 
 func statsHandler(client MQTT.Client, msg MQTT.Message) {

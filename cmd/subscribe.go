@@ -38,7 +38,6 @@ import (
 const builtinTemplate = "Received message on topic: {{.Topic}}\nMessage: {{.Message}}\n"
 
 var cleanSession bool
-var mqInbound = make(chan [2]string)
 var done = false
 
 var optTemplate string

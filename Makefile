@@ -9,9 +9,11 @@ LDFLAGS := -ldflags "-X main.VERSION=$(VERSION) -X main.COMMIT=${COMMIT}"
 PLATFORMS=darwin linux windows
 ARCHITECTURES=386 amd64
 RELEASE_ROOT=release
+REPORTS=reports
 
 $(BINARY): $(SOURCES)
-	@go build ${LDFLAGS} -o ${BINARY} main.go
+	@mkdir -p $(REPORTS)
+	$(shell export GORACE=log_path=$(REPORTS)/race.log; go build ${LDFLAGS} -race -o ${BINARY} main.go)
 
 $(RELEASE_ROOT)/darwin-amd64/$(BINARY): $(SOURCES)
 	$(shell export GOOS=darwin; export GOARCH=amd64; go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/darwin-amd64/$(BINARY))
@@ -45,8 +47,8 @@ lint:  ## Run golint and go fmt on source base
 
 .PHONY: dep_graph
 dep_graph:  ## Generate a dependency graph from dep and graphvis
-	@mkdir -p reports
-	@dep status -dot | dot -T png > reports/dependancy_graph.png
+	@mkdir -p $(REPORTS)
+	@dep status -dot | dot -T png > $(REPORTS)/dependancy_graph.png
 
 .PHONY: help
 help:   ## Display this help message
@@ -60,6 +62,3 @@ todo:   ## Greps for any TODO comments in the source code
 .PHONY: version
 version:  ## Show the version the Makefile will build
 	@echo $(VERSION)
-
-
-

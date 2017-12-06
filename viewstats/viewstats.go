@@ -21,7 +21,6 @@
 package viewstats
 
 import (
-	"sync"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -32,16 +31,17 @@ const datePrint = "Jan 02, 2006 15:04:05"
 
 type dataHash map[string]string
 
+var mqInbound = make(chan [2]string, 16)
+
 func (d dataHash) get(key string) (result string) {
 	if v, ok := d[key]; ok {
 		return v
 	}
-	d[key] = "n/a"
-	return d[key]
+	// d[key] = "n/a"
+	return "n/a"
 }
 
 var mqttData dataHash
-var mqttDataMutex sync.RWMutex
 
 var (
 	startTime time.Time
@@ -55,13 +55,12 @@ var ExitStatsViewer bool
 // PrepViewer is called to make sure our hash table exists before AddStat
 func PrepViewer() {
 	mqttData = make(dataHash)
-	mqttDataMutex = sync.RWMutex{}
 	startTime = time.Now()
 }
 
 // StartStatsDisplay sets up the terminal UI to display
 // data.  It will run in an infinite loop until Ctrl-C is hit
-func StartStatsDisplay(theChan chan [2]string) {
+func StartStatsDisplay() {
 	ExitStatsViewer = false
 
 	err := termbox.Init()
@@ -93,6 +92,8 @@ func StartStatsDisplay(theChan chan [2]string) {
 		select {
 		case <-timer:
 			redrawAll()
+		case inMsg := <-mqInbound:
+			mqttData[inMsg[0]] = inMsg[1]
 		}
 	}
 }
@@ -101,6 +102,7 @@ func StartStatsDisplay(theChan chan [2]string) {
 // values in a hash that is displayed in the UI
 func AddStat(topic string, data string) {
 	var key string
+	var msg [2]string
 
 	switch topic {
 	case "$SYS/broker/load/bytes/received":
@@ -215,12 +217,10 @@ func AddStat(topic string, data string) {
 		key = "LoadPublishDropped15min"
 	}
 
-	// TODO: this may need to be a channel the UI side reads from
-	// still getting a race condition here
 	if key != "" {
-		mqttDataMutex.Lock()
-		mqttData[key] = data
-		mqttDataMutex.Unlock()
+		msg[0] = key
+		msg[1] = data
+		mqInbound <- msg
 	}
 }
 
