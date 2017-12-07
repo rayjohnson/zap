@@ -77,8 +77,8 @@ options can be used at a time:
 | --file         |  Takes a file name and sends the entire contents of the file as a single message |
 | --message      |  Takes an argument that is the data sent to the broker. |
 | --null-message |  Just sends an empty string as a message.  |
-| --stdin-file.  |  This takes no argument - it reads from stdin until it reaches EOF and sends the entire contents as one message.  |
-| --stdin-line.  |  This also takes no argument and reads from stdin.  Each new-line sends a new message on the topic.  |
+| --stdin-file   |  This takes no argument - it reads from stdin until it reaches EOF and sends the entire contents as one message.  |
+| --stdin-line   |  This also takes no argument and reads from stdin.  Each new-line sends a new message on the topic.  |
 
 So, for example, the following will send one message to the topic of test/my_test with the contents of Hello World!
 

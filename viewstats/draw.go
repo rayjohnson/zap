@@ -116,7 +116,8 @@ func drawLoadTitle(x int, y int, max int) int {
 	return y + 1
 }
 
-func parseLoad(num string) string {
+// Print a number such that it always fits into 6 spaces
+func fixedLenNum(num string) string {
 	numWidth := 6
 	if num == "n/a" || len(num) < 6 {
 		return fmt.Sprintf("%*s", numWidth, num)
@@ -124,13 +125,30 @@ func parseLoad(num string) string {
 
 	fNum, err := strconv.ParseFloat(num, 32)
 	if err != nil {
-		return "error"
+		return fmt.Sprintf("%*s", numWidth, "#err")
 	}
-	return fmt.Sprintf("%5.f", fNum)
+
+	for i := 2; i >= 0; i-- {
+		str := fmt.Sprintf("%*.*f", numWidth, i, fNum)
+		if len(str) <= numWidth {
+			return str
+		}
+	}
+
+	numM := fNum / 1000000
+	for i := 2; i >= 0; i-- {
+		str := fmt.Sprintf("%*.*f M", numWidth-2, i, numM)
+		if len(str) <= numWidth {
+			return str
+		}
+	}
+
+	numB := numM / 1000
+	return fmt.Sprintf("%*.2f B", numWidth-2, numB)
 }
 
 func drawThree(x int, y int, mid int, label string, oneMin string, fiveMin string, fifteenMin string) int {
-	s := fmt.Sprintf("%*s : %6s %6s %6s", mid, label, parseLoad(oneMin), parseLoad(fiveMin), parseLoad(fifteenMin))
+	s := fmt.Sprintf("%*s : %6s %6s %6s", mid, label, fixedLenNum(oneMin), fixedLenNum(fiveMin), fixedLenNum(fifteenMin))
 	for i, c := range s {
 		termbox.SetCell(x+i, y, c, coldef, coldef)
 	}
