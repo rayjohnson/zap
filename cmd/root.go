@@ -89,6 +89,24 @@ func getCorrectConfigKey(broker string, key string) string {
 // ParseBrokerInfo is called by subcommands tp parse the global option
 // values related to connecting to the mqtt broker.
 func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
+	// If --broker was set make sure the section is in the config file
+	if cmd.Parent().PersistentFlags().Lookup("broker").Changed {
+		if optBroker != "" {
+			// TODO: maybe call InConfig
+			table := viper.Sub(optBroker)
+			if table == nil {
+				fmt.Printf("broker \"%s\" could not be found in the config file\n", optBroker)
+				os.Exit(1)
+			} else {
+				list := table.AllKeys()
+				if len(list) == 0 {
+					fmt.Printf("broker \"%s\" has no keys in the config file\n", optBroker)
+					os.Exit(1)
+				}
+			}
+		}
+	}
+
 	broker := optBroker
 
 	if !cmd.Parent().PersistentFlags().Lookup("server").Changed {
@@ -233,6 +251,7 @@ func initConfig() {
 	err := viper.ReadInConfig()
 	if err != nil {
 		fmt.Printf("Error reading config file: %s\n", err)
+		os.Exit(1)
 	}
 
 	// Uncomment these to turn on debugging from within the mqtt library.

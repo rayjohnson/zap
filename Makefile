@@ -29,7 +29,11 @@ setup:  ## Creates vendor directory with all dependencies
 	@dep ensure
 
 .PHONY: build
-build: $(BINARY)
+build: $(BINARY)  ## Build the source
+
+.PHONY: install
+install: build. ## Builds and installs zap into your go/bin
+	go install ${LDFLAGS}
 
 .PHONY: build_all
 build_all: $(RELEASE_ROOT)/darwin-amd64/$(BINARY) $(RELEASE_ROOT)/linux-amd64/$(BINARY) $(RELEASE_ROOT)/windows-amd64/$(BINARY).exe
