@@ -67,7 +67,24 @@ Note that the global settings are still in effect when specifying a broker.  It 
 
 ### Publish command
 
-TODO
+The *zap publish* command allows you to publish to a server on a given topic.
+
+There are several options for how you can pass the data to zap.  Only one of these
+options can be used at a time:
+
+| Option         |   Description   |
+|---------------:|-----------------|
+| --file         |  Takes a file name and sends the entire contents of the file as a single message |
+| --message      |  Takes an argument that is the data sent to the broker. |
+| --null-message |  Just sends an empty string as a message.  |
+| --stdin-file.  |  This takes no argument - it reads from stdin until it reaches EOF and sends the entire contents as one message.  |
+| --stdin-line.  |  This also takes no argument and reads from stdin.  Each new-line sends a new message on the topic.  |
+
+So, for example, the following will send one message to the topic of test/my_test with the contents of Hello World!
+
+```
+zap publish --server tcp://test.mosquitto.org:1883 --topic test/my_test --message "Hello World!"
+```
 
 ### Subscribe command
 
