@@ -46,7 +46,6 @@ func stats(cmd *cobra.Command, args []string) {
 	connOpts := ParseBrokerInfo(cmd, args)
 	connOpts.CleanSession = true
 
-	viewstats.ExitStatsViewer = false
 	PrintConnectionInfo()
 
 	exitWithError := false

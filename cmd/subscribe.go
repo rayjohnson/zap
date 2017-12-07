@@ -38,7 +38,6 @@ import (
 const builtinTemplate = "Received message on topic: {{.Topic}}\nMessage: {{.Message}}\n"
 
 var cleanSession bool
-var done = false
 
 var optTemplate string
 var stdoutTemplate *template.Template
@@ -64,12 +63,13 @@ func subscribe(cmd *cobra.Command, args []string) {
 	PrintConnectionInfo()
 	stdoutTemplate = getTemplate(cmd)
 
+	quit := make(chan bool)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		fmt.Println("signal received, exiting")
-		done = true
+		quit <- true
 	}()
 
 	exitWithError := false
@@ -98,10 +98,12 @@ func subscribe(cmd *cobra.Command, args []string) {
 	}
 	defer client.Unsubscribe(optTopic)
 
+loop:
 	for {
 		time.Sleep(time.Millisecond * 10)
-		if done {
-			break
+		select {
+		case <-quit:
+			break loop
 		}
 	}
 

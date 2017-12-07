@@ -21,6 +21,7 @@
 package viewstats
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -49,9 +50,6 @@ var (
 	w, h int
 )
 
-// ExitStatsViewer will be set to false by calling package - if set true viewer should end
-var ExitStatsViewer bool
-
 // PrepViewer is called to make sure our hash table exists before AddStat
 func PrepViewer() {
 	mqttData = make(dataHash)
@@ -61,8 +59,6 @@ func PrepViewer() {
 // StartStatsDisplay sets up the terminal UI to display
 // data.  It will run in an infinite loop until Ctrl-C is hit
 func StartStatsDisplay() {
-	ExitStatsViewer = false
-
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
@@ -72,8 +68,9 @@ func StartStatsDisplay() {
 	redrawAll()
 
 	//capture and process events from the CLI
+	quit := make(chan bool)
 	eventChan := make(chan termbox.Event, 16)
-	go handleEvents(eventChan)
+	go handleEvents(eventChan, quit)
 	go func() {
 		for {
 			ev := termbox.PollEvent()
@@ -83,19 +80,20 @@ func StartStatsDisplay() {
 
 	// start update (redraw) ticker
 	timer := time.Tick(time.Millisecond * 100)
+loop:
 	for {
-		if ExitStatsViewer {
-			termbox.Close()
-			break
-		}
-
 		select {
+		case <-quit:
+			termbox.Close()
+			break loop
 		case <-timer:
 			redrawAll()
 		case inMsg := <-mqInbound:
 			mqttData[inMsg[0]] = inMsg[1]
 		}
 	}
+
+	fmt.Println("all done")
 }
 
 // AddStat parses the MQTT topics and puts the latest
@@ -224,7 +222,8 @@ func AddStat(topic string, data string) {
 	}
 }
 
-func handleEvents(eventChan chan termbox.Event) {
+func handleEvents(eventChan chan termbox.Event, quit chan bool) {
+loop:
 	for {
 		ev := <-eventChan
 		switch ev.Type {
@@ -232,11 +231,13 @@ func handleEvents(eventChan chan termbox.Event) {
 			switch ev.Key {
 
 			case termbox.KeyEsc, termbox.KeyCtrlQ, termbox.KeyCtrlC:
-				ExitStatsViewer = true
+				quit <- true
+				break loop
 
 			default:
 				if ev.Ch == 'q' || ev.Ch == 'Q' {
-					ExitStatsViewer = true
+					quit <- true
+					break loop
 				}
 			}
 		case termbox.EventError:
