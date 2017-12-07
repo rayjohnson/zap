@@ -152,16 +152,24 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 		optClientID = fmt.Sprintf("%s%s", optClientPrefix, strconv.Itoa(os.Getpid()))
 	}
 
-	connOpts := &MQTT.ClientOptions{
-		ClientID:             optClientID,
-		CleanSession:         cleanSession,
-		Username:             optUsername,
-		Password:             optPassword,
-		MaxReconnectInterval: 1 * time.Second,
-		KeepAlive:            int64(optKeepAlive),
-		TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
-	}
+	connOpts := MQTT.NewClientOptions()
+	connOpts.SetClientID(optClientID)
+	connOpts.SetUsername(optUsername)
+	connOpts.SetPassword(optPassword)
+	connOpts.SetCleanSession(cleanSession)
+	connOpts.SetKeepAlive(time.Duration(optKeepAlive) * time.Second)
+	connOpts.SetTLSConfig(&tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert})
 	connOpts.AddBroker(optServer)
+
+	// connOpts := &MQTT.ClientOptions{
+	// 	ClientID:             optClientID,
+	// 	CleanSession:         cleanSession,
+	// 	Username:             optUsername,
+	// 	Password:             optPassword,
+	// 	MaxReconnectInterval: 1 * time.Second,
+	// 	KeepAlive:            int64(optKeepAlive),
+	// 	TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
+	// }
 
 	return connOpts
 }
