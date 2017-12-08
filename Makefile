@@ -4,10 +4,9 @@ VERSION := $(shell cat VERSION)
 COMMIT=$(shell git rev-parse HEAD)
 
 SOURCES := $(shell find main.go cmd viewstats -name '*.go')
+PKGS := $(shell go list ./... | grep -v /vendor)
 
 LDFLAGS := -ldflags "-X main.VERSION=$(VERSION) -X main.COMMIT=${COMMIT}"
-PLATFORMS=darwin linux windows
-ARCHITECTURES=386 amd64
 RELEASE_ROOT=release
 REPORTS=reports
 
@@ -15,14 +14,16 @@ $(BINARY): $(SOURCES)
 	@mkdir -p $(REPORTS)
 	$(shell export GORACE=log_path=$(REPORTS)/race.log; go build ${LDFLAGS} -race -o ${BINARY} main.go)
 
-$(RELEASE_ROOT)/darwin-amd64/$(BINARY): $(SOURCES)
-	$(shell export GOOS=darwin; export GOARCH=amd64; go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/darwin-amd64/$(BINARY))
+PLATFORMS=darwin linux windows
+os = $(word 1, $@)
 
-$(RELEASE_ROOT)/linux-amd64/$(BINARY): $(SOURCES)
-	$(shell export GOOS=linux; export GOARCH=amd64; go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/linux-amd64/$(BINARY))
-
-$(RELEASE_ROOT)/windows-amd64/$(BINARY).exe: $(SOURCES)
-	$(shell export GOOS=windows; export GOARCH=amd64; go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/windows-amd64/$(BINARY).exe)
+# Cross compile and build all platforms and add assets
+.PHONY: $(PLATFORMS)
+$(PLATFORMS):
+	mkdir -p $(RELEASE_ROOT)/$(os)
+	GOOS=$(os) GOARCH=amd64 go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/$(os)/$(BINARY)
+	cp -r examples $(RELEASE_ROOT)/$(os)/
+	cp README.md $(RELEASE_ROOT)/$(os)/
 
 .PHONY: setup
 setup:  ## Creates vendor directory with all dependencies
@@ -32,22 +33,27 @@ setup:  ## Creates vendor directory with all dependencies
 build: $(BINARY)  ## Build the source
 
 .PHONY: install
-install: build. ## Builds and installs zap into your go/bin
+install: build  ## Builds and installs zap into your go/bin
 	go install ${LDFLAGS}
 
-.PHONY: build_all
-build_all: $(RELEASE_ROOT)/darwin-amd64/$(BINARY) $(RELEASE_ROOT)/linux-amd64/$(BINARY) $(RELEASE_ROOT)/windows-amd64/$(BINARY).exe
+.PHONY: release
+release: windows linux darwin   ## Do cross platform build and package
+	mv $(RELEASE_ROOT)/windows/zap $(RELEASE_ROOT)/windows/zap.exe
+	#tar -cvzf blah.tar.gz $(RELEASE_ROOT)/linux/*
 
 .PHONY: clean
 clean:  ## Clean up any generated files
 	@if [ -f ${BINARY} ] ; then rm ${BINARY} ; fi
-	@if [ -f reports ] ; then rm reports ; fi
-	@if [ -f release ] ; then rm release ; fi
+	$(shell rm -rf release reports)
 
 .PHONY: lint
 lint:  ## Run golint and go fmt on source base
-	@go fmt $(shell go list ./... | grep -v /vendor/)
-	@golint $(shell go list ./... | grep -v /vendor/)
+	@go fmt $(PKGS)
+	@golint $(PKGS)
+
+.PHONY: test
+test:  ## Run test suite (go test)
+	@go test $(PKGS)
 
 .PHONY: dep_graph
 dep_graph:  ## Generate a dependency graph from dep and graphvis
