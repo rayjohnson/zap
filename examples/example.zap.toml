@@ -1,0 +1,49 @@
+# This is a sample  configuration file you would put at ~/.zap.toml
+
+# Order of precedence of configs are:
+#    Arguments passed on the command line trump all else
+#    Configs in a labeled section (e.g. [mossquitio]) are then used
+#         (these are accessed using the --broker or -b flag)
+#    Configs at the toplevel of this file (e.g. just below) are then used
+#    Finally, zap has built-in defaults that will be used
+server = "tcp://localhost:1883"
+client-prefix = "me_"
+username = ""
+password = ""
+
+# The follow are configurations that talk to some public brokers
+# that can be used for testing or playing with mqtt
+
+[mosquitto]
+# This is an unencrypted tcp connection
+# See http://test.mosquitto.org for details on this public broker
+server = "tcp://test.mosquitto.org:1883"
+
+[mosquitto-skip-vefify]
+# This establishes an encrypted session but skipping the verification with a CA
+# See http://test.mosquitto.org for details on this public broker
+server = "tls://test.mosquitto.org:8883"
+insecure = true
+
+[mosquitto-encrypted]
+# This establishes an encrypted session and verifies the connection
+# with a CA certificate downloaded from http://test.mosquitto.org
+server = "tls://test.mosquitto.org:8883"
+cafile = "examples/mosquitto.org.crt"
+
+[mosquitto-cert]
+# This one requires a cert http://test.mosquitto.org/ssl/
+# See http://test.mosquitto.org for details on this public broker
+server = "ssl://test.mosquitto.org:8884"
+cafile = "examples/mosquitto.org.crt"
+cert = "examples/client.crt"
+key = "examples/client.key"
+
+[hivemq]
+# This does not appear to publish much on $SYS/# so stats will not show anything
+server = "tcp://broker.mqttdashboard.com:1883"
+
+# Not working yet -- web sockets were down on the server when attempting to test
+[mosquitto-ws]
+# See http://test.mosquitto.org for details on this public broker
+server = "ws://test.mosquitto.org:8080"
