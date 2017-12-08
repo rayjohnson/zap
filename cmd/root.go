@@ -22,7 +22,9 @@ package cmd
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -45,6 +47,10 @@ var optClientID string
 var optClientPrefix string
 var optQos int
 var optKeepAlive int
+var optCert string
+var optKey string
+var optCa string
+var optInsecure bool
 
 // TODO: move topic to sub-command - each needs different defaults
 var optTopic string
@@ -89,6 +95,8 @@ func getCorrectConfigKey(broker string, key string) string {
 // ParseBrokerInfo is called by subcommands tp parse the global option
 // values related to connecting to the mqtt broker.
 func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
+	// TODO: this whole routine needs a major refactor
+
 	// If --broker was set make sure the section is in the config file
 	if cmd.Parent().PersistentFlags().Lookup("broker").Changed {
 		if optBroker != "" {
@@ -124,6 +132,30 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 	if !cmd.Parent().PersistentFlags().Lookup("password").Changed {
 		if key := getCorrectConfigKey(broker, "password"); key != "" {
 			optPassword = viper.GetString(key)
+		}
+	}
+
+	if !cmd.Parent().PersistentFlags().Lookup("cert").Changed {
+		if key := getCorrectConfigKey(broker, "cert"); key != "" {
+			optCert = viper.GetString(key)
+		}
+	}
+
+	if !cmd.Parent().PersistentFlags().Lookup("key").Changed {
+		if key := getCorrectConfigKey(broker, "key"); key != "" {
+			optKey = viper.GetString(key)
+		}
+	}
+
+	if !cmd.Parent().PersistentFlags().Lookup("cafile").Changed {
+		if key := getCorrectConfigKey(broker, "cafile"); key != "" {
+			optCa = viper.GetString(key)
+		}
+	}
+
+	if !cmd.Parent().PersistentFlags().Lookup("insecure").Changed {
+		if key := getCorrectConfigKey(broker, "insecure"); key != "" {
+			optInsecure = viper.GetBool(key)
 		}
 	}
 
@@ -176,18 +208,42 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 	connOpts.SetPassword(optPassword)
 	connOpts.SetCleanSession(cleanSession)
 	connOpts.SetKeepAlive(time.Duration(optKeepAlive) * time.Second)
-	connOpts.SetTLSConfig(&tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert})
 	connOpts.AddBroker(optServer)
 
-	// connOpts := &MQTT.ClientOptions{
-	// 	ClientID:             optClientID,
-	// 	CleanSession:         cleanSession,
-	// 	Username:             optUsername,
-	// 	Password:             optPassword,
-	// 	MaxReconnectInterval: 1 * time.Second,
-	// 	KeepAlive:            int64(optKeepAlive),
-	// 	TLSConfig:            tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
-	// }
+	// tls set up
+	tlsConfig := tls.Config{InsecureSkipVerify: optInsecure}
+	// if either option is set
+	if optCert != "" || optKey != "" {
+		// make sure both options are set
+		// TODO: check that these files exist for better error message
+		if optCert == "" || optKey == "" {
+			fmt.Println("for tls: both --key and --cert options must be set")
+			os.Exit(1)
+		}
+		cert, err := tls.LoadX509KeyPair(optCert, optKey)
+		if err != nil {
+			fmt.Printf("tlc error: %s\n", err)
+			os.Exit(1)
+		}
+
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	} else {
+		tlsConfig.ClientAuth = tls.NoClientCert
+	}
+
+	if optCa != "" {
+		// Load CA cert
+		// TODO - need to support loading cafile without client cert and key
+		caCert, err := ioutil.ReadFile(optCa)
+		if err != nil {
+			fmt.Printf("could not read cafile: %s\n", err)
+			os.Exit(1)
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		tlsConfig.RootCAs = caCertPool
+	}
+	connOpts.SetTLSConfig(&tlsConfig)
 
 	return connOpts
 }
@@ -200,6 +256,10 @@ func PrintConnectionInfo() {
 			fmt.Println(". From broker config: ", optBroker)
 		}
 		fmt.Println("  Server: ", optServer)
+		if optKey != "" {
+			fmt.Println("  Key path: ", optKey)
+			fmt.Println("  Cert path: ", optCert)
+		}
 		fmt.Println("  ClientId: ", optClientID)
 		fmt.Println("  Username: ", optUsername)
 		fmt.Println("  Password: ", optPassword)
@@ -224,6 +284,11 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&optKeepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
 	rootCmd.PersistentFlags().StringVarP(&optBroker, "broker", "b", "", "broker configuration")
 	rootCmd.PersistentFlags().BoolVar(&optVerbose, "verbose", false, "give more verbose information")
+
+	rootCmd.PersistentFlags().StringVar(&optCa, "cafile", "", "path to ca file used to certify your cert")
+	rootCmd.PersistentFlags().StringVar(&optCert, "cert", "", "path to client.crt file used to connect to server")
+	rootCmd.PersistentFlags().StringVar(&optKey, "key", "", "path to client.key file used to connect to server")
+	rootCmd.PersistentFlags().BoolVar(&optInsecure, "insecure", false, "skips verification for SSL connections")
 
 	// TODO: this should move to sub-command so it has different defaults
 	rootCmd.PersistentFlags().StringVar(&optTopic, "topic", "#", "mqtt topic")

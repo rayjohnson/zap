@@ -8,10 +8,18 @@ Zap can be used to publish to or subscribe from an mqtt message broker.  It was 
 
 ## Installation
 
+#### Install from source
+
+You need to have go installed - and be able to build the project (see below).  Build the project.
+
 To install from source, do:
 ```bash
 $ make install
 ```
+
+#### Dounload pre-built executables
+
+TODO
 
 ## Configuration file
 
@@ -51,12 +59,20 @@ Of course, _production_ is just a label.  You can name it whatever you want and 
 Note that the global settings are still in effect when specifying a broker.  It is just that the broker will override any global config settings.  Also, any command-line options will override any options set in the config file.
 
 ### Global configs
+
+Here are the global options - most are related to how to connect to the mqtt server.  
+
 ```
   -b, --broker string          broker configuration
+      --cafile string          path to ca file used to certify your cert
+      --cert string            path to client.crt file used to connect to server
       --client-prefix string   prefix to use to generate a client id if none is specified (default "zap_")
       --config string          config file (default is $HOME/.zap.toml)
+  -h, --help                   help for zap
   -i, --id string              id to use for this client (default is generated from client-prefix)
+      --insecure               skips verification for SSL connections
   -k, --keepalive int          the number of seconds after which a PING is sent to the broker (default 60)
+      --key string             path to client.key file used to connect to server
       --password string        password for accessing MQTT
       --qos int                qos setting
       --server string          location of MQTT server (default "tcp://127.0.0.1:1883")
@@ -64,6 +80,14 @@ Note that the global settings are still in effect when specifying a broker.  It 
       --username string        username for accessing MQTT
       --verbose                give more verbose information
 ```
+
+Most of these can also be specified in the config file.  By putting the connection information in your config under different sections it can save a lot of typing on the command line!  In the examples directory
+there is a sample config with several public brokers you can test with.  You can then quickly access like this:
+```
+$ zap subscribe -b mosquitto --topic "foo/bar"
+```
+
+Please feel free to try them out!
 
 ### Publish command
 
