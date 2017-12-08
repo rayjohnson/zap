@@ -233,7 +233,6 @@ func ParseBrokerInfo(cmd *cobra.Command, args []string) *MQTT.ClientOptions {
 
 	if optCa != "" {
 		// Load CA cert
-		// TODO - need to support loading cafile without client cert and key
 		caCert, err := ioutil.ReadFile(optCa)
 		if err != nil {
 			fmt.Printf("could not read cafile: %s\n", err)

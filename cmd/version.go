@@ -22,14 +22,19 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 )
 
 var version string
 var revision string
 
 var genAutoComplete bool
+var genManPages bool
+var installDir string
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
@@ -40,9 +45,32 @@ var versionCmd = &cobra.Command{
 Run with the --generate-auto-complete option and a file named
 zap.sh will be generated for use in autocomplete scripts`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if genAutoComplete || genManPages {
+			// Check the given directory
+			stat, err := os.Stat(installDir)
+
+			if err != nil && !stat.IsDir() {
+				fmt.Println("--directory argument does not exist or is not a directory")
+				os.Exit(1)
+			}
+		}
+
 		if genAutoComplete {
-			cmd.Root().GenBashCompletionFile("zap.sh")
+			path := filepath.Join(installDir, "zap.sh")
+			cmd.Root().GenBashCompletionFile(path)
 			return
+		}
+
+		if genManPages {
+			header := &doc.GenManHeader{
+				Title:   "ZAP",
+				Section: "1",
+			}
+			err := doc.GenManTree(cmd.Root(), header, installDir)
+			if err != nil {
+				fmt.Printf("Error generating man pages: %s\n", err)
+			}
 		}
 
 		fmt.Println("zap version " + version + ", Revision: " + revision)
@@ -52,5 +80,7 @@ zap.sh will be generated for use in autocomplete scripts`,
 func init() {
 	rootCmd.AddCommand(versionCmd)
 
-	versionCmd.Flags().BoolVarP(&genAutoComplete, "generate-auto-complete", "g", false, "generates a bash autocomplete script for zap to zap.sh")
+	versionCmd.Flags().BoolVar(&genAutoComplete, "generate-auto-complete", false, "generates a bash autocomplete script zap.sh")
+	versionCmd.Flags().BoolVar(&genManPages, "generate-man-pages", false, "generates the man pages for zap")
+	versionCmd.Flags().StringVar(&installDir, "directory", ".", "directory to install generated files")
 }
