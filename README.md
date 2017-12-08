@@ -17,9 +17,9 @@ To install from source, do:
 $ make install
 ```
 
-#### Dounload pre-built executables
+#### Download pre-built executables
 
-TODO
+Go [here](https://github.com/rayjohnson/zap/releases) to find binaries for Windows, MocOS and Linux.  All are 64bit builds.  (Let me know if you would like other platforms pre-built - it is easy to do but I'd like someone to validate they work.)
 
 ## Configuration file
 
