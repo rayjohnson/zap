@@ -14,3 +14,5 @@ before_install:
 
 install:
   - dep ensure
+
+script: make test

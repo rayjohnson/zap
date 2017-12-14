@@ -1,5 +1,5 @@
 
-BINARY=zap
+BINARY=./zap
 VERSION := $(shell cat VERSION)
 COMMIT=$(shell git rev-parse HEAD)
 
@@ -12,16 +12,18 @@ REPORTS=reports
 
 $(BINARY): $(SOURCES)
 	@mkdir -p $(REPORTS)
-	$(shell export GORACE=log_path=$(REPORTS)/race.log; go build ${LDFLAGS} -race -o ${BINARY} main.go)
+	go build ${LDFLAGS} -race -o ${BINARY} main.go
 
 PLATFORMS=darwin linux windows
 os = $(word 1, $@)
 
 # Cross compile and build all platforms and add assets
 .PHONY: $(PLATFORMS)
-$(PLATFORMS):
-	mkdir -p $(RELEASE_ROOT)/$(os)
+$(PLATFORMS): $(BINARY)
+	mkdir -p $(RELEASE_ROOT)/$(os)/man/man1
 	GOOS=$(os) GOARCH=amd64 go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/$(os)/$(BINARY)
+	$(BINARY) version --generate-auto-complete --directory $(RELEASE_ROOT)/$(os)/
+	$(BINARY) version --generate-man-pages --directory $(RELEASE_ROOT)/$(os)/man/man1/
 	cp -r examples $(RELEASE_ROOT)/$(os)/
 	cp README.md $(RELEASE_ROOT)/$(os)/
 
@@ -39,7 +41,10 @@ install: build  ## Builds and installs zap into your go/bin
 .PHONY: release
 release: windows linux darwin   ## Do cross platform build and package
 	mv $(RELEASE_ROOT)/windows/zap $(RELEASE_ROOT)/windows/zap.exe
-	#tar -cvzf blah.tar.gz $(RELEASE_ROOT)/linux/*
+	tar -czvf $(RELEASE_ROOT)/zap_v$(VERSION)_darwin.tar.gz -C $(RELEASE_ROOT)/darwin/ .
+	tar -czvf $(RELEASE_ROOT)/zap_v$(VERSION)_linux.tar.gz -C $(RELEASE_ROOT)/linux/ .
+	cd $(RELEASE_ROOT)/windows; zip -r ../zap_v$(VERSION)_windows.zip *; cd -
+
 
 .PHONY: clean
 clean:  ## Clean up any generated files
@@ -53,7 +58,7 @@ lint:  ## Run golint and go fmt on source base
 
 .PHONY: test
 test:  ## Run test suite (go test)
-	@go test $(PKGS)
+	go test $(PKGS)
 
 .PHONY: dep_graph
 dep_graph:  ## Generate a dependency graph from dep and graphvis
