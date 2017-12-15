@@ -25,7 +25,7 @@ Go [here](https://github.com/rayjohnson/zap/releases) to find binaries for Windo
 
 Zap supports having a configuration file that can set many of the common options related to connecting to a given mqtt broker.
 
-You can create the configuration file at ~/.zap.toml.  (Though you can override the location with the --config option.). The file uses the [Toml(https://github.com/toml-lang/toml)] format.  
+You can create the configuration file at ~/.zap.toml.  (Though you can override the location with the --config option.). The file uses the [Toml](https://github.com/toml-lang/toml) format.  
 
 Here is an example of the options that can be specified in the configuration file:
 ```toml
@@ -58,9 +58,9 @@ Of course, _production_ is just a label.  You can name it whatever you want and 
 
 Note that the global settings are still in effect when specifying a broker.  It is just that the broker will override any global config settings.  Also, any command-line options will override any options set in the config file.
 
-### Global configs
+### Broker connection settings
 
-Here are the global options - most are related to how to connect to the mqtt server.  
+Here are the options related to connecting to an mqtt server.  These options are available on the publish, subscribe and stats sub-commands.  
 
 ```
   -b, --broker string          broker configuration
@@ -68,7 +68,6 @@ Here are the global options - most are related to how to connect to the mqtt ser
       --cert string            path to client.crt file used to connect to server
       --client-prefix string   prefix to use to generate a client id if none is specified (default "zap_")
       --config string          config file (default is $HOME/.zap.toml)
-  -h, --help                   help for zap
   -i, --id string              id to use for this client (default is generated from client-prefix)
       --insecure               skips verification for SSL connections
   -k, --keepalive int          the number of seconds after which a PING is sent to the broker (default 60)
@@ -78,7 +77,6 @@ Here are the global options - most are related to how to connect to the mqtt ser
       --server string          location of MQTT server (default "tcp://127.0.0.1:1883")
       --topic string           mqtt topic (default "#")
       --username string        username for accessing MQTT
-      --verbose                give more verbose information
 ```
 
 Most of these can also be specified in the config file.  By putting the connection information in your config under different sections it can save a lot of typing on the command line!  In the examples directory

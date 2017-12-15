@@ -30,39 +30,58 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
-
-// publishCmd represents the publish command
-var publishCmd = &cobra.Command{
-	Use:   "publish",
-	Short: "Publish into MQTT",
-	Long: `The publish command allows you to send data on an MQTT topic
-
-Multiple options are available to send a single argument, a whole file, or 
-data coming from stdin.`,
-	Run: publish,
-}
 
 var optMessage string
 var optFilePath string
 var optRetain bool
 
-func validatePublishOptions(cmd *cobra.Command) {
+func newPublishCommand() *cobra.Command {
+	var conOpts *connectionOptions
+
+	cmd := &cobra.Command{
+		Use:   "publish",
+		Short: "Publish into MQTT",
+		Long: `The publish command allows you to send data on an MQTT topic
+
+Multiple options are available to send a single argument, a whole file, or
+data coming from stdin.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			runPublish(cmd.Flags(), conOpts)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.BoolP("stdin-line", "l", false, "send stdin data as message with each newline is a new message")
+	flags.BoolP("stdin-file", "s", false, "read stdin until EOF and send all as one message")
+	flags.StringVarP(&optMessage, "message", "m", "", "send the argument to the topic and exit")
+	flags.StringVarP(&optFilePath, "file", "f", "", "send contents of the file to the topic and exit")
+	flags.BoolVarP(&optRetain, "retain", "r", false, "retain as the last good message")
+	flags.BoolP("null-message", "n", false, "send a null (zero length) message")
+	flags.StringVar(&optTopic, "topic", "sample", "mqtt topic to post to")
+
+	conOpts = addConnectionFlags(flags)
+
+	return cmd
+}
+
+func validatePublishOptions(flags *pflag.FlagSet) {
 	var count = 0
 
-	if cmd.Flags().Lookup("message").Changed {
+	if flags.Lookup("message").Changed {
 		count++
 	}
-	if cmd.Flags().Lookup("null-message").Changed {
+	if flags.Lookup("null-message").Changed {
 		count++
 	}
-	if cmd.Flags().Lookup("file").Changed {
+	if flags.Lookup("file").Changed {
 		count++
 	}
-	if cmd.Flags().Lookup("stdin-line").Changed {
+	if flags.Lookup("stdin-line").Changed {
 		count++
 	}
-	if cmd.Flags().Lookup("stdin-file").Changed {
+	if flags.Lookup("stdin-file").Changed {
 		count++
 	}
 
@@ -78,13 +97,13 @@ func validatePublishOptions(cmd *cobra.Command) {
 
 }
 
-func publish(cmd *cobra.Command, args []string) {
-	connOpts := ParseBrokerInfo(cmd, args)
-	connOpts.CleanSession = true
+func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions) {
+	clientOpts := ParseBrokerInfo(flags, conOpts)
+	clientOpts.CleanSession = true
 
-	validatePublishOptions(cmd)
+	validatePublishOptions(flags)
 
-	PrintConnectionInfo()
+	PrintConnectionInfo(conOpts)
 
 	exitWithError := false
 	defer func() {
@@ -93,7 +112,7 @@ func publish(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	client := MQTT.NewClient(connOpts)
+	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		exitWithError = true
@@ -102,20 +121,20 @@ func publish(cmd *cobra.Command, args []string) {
 	defer client.Disconnect(250)
 
 	if optVerbose {
-		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
+		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
 	}
 
-	if cmd.Flags().Lookup("message").Changed {
+	if flags.Lookup("message").Changed {
 		// send a single message
 		client.Publish(optTopic, byte(optQos), optRetain, optMessage)
 	}
 
-	if cmd.Flags().Lookup("null-message").Changed {
+	if flags.Lookup("null-message").Changed {
 		// send a null message (actually an empty string)
 		client.Publish(optTopic, byte(optQos), optRetain, "")
 	}
 
-	if cmd.Flags().Lookup("file").Changed {
+	if flags.Lookup("file").Changed {
 		// send entire file as message
 		if _, err := os.Stat(optFilePath); !os.IsNotExist(err) {
 			buf, err := ioutil.ReadFile(optFilePath) // just pass the file name
@@ -133,7 +152,7 @@ func publish(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if cmd.Flags().Lookup("stdin-line").Changed {
+	if flags.Lookup("stdin-line").Changed {
 		// read from stdin read by line - send one messages per line
 		stdin := bufio.NewReader(os.Stdin)
 
@@ -147,7 +166,7 @@ func publish(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if cmd.Flags().Lookup("stdin-file").Changed {
+	if flags.Lookup("stdin-file").Changed {
 		data, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			fmt.Printf("error reading file: %s\n", err)
@@ -158,15 +177,4 @@ func publish(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("message sent\n")
-}
-
-func init() {
-	rootCmd.AddCommand(publishCmd)
-
-	publishCmd.Flags().BoolP("stdin-line", "l", false, "send stdin data as message with each newline is a new message")
-	publishCmd.Flags().BoolP("stdin-file", "s", false, "read stdin until EOF and send all as one message")
-	publishCmd.Flags().StringVarP(&optMessage, "message", "m", "", "send the argument to the topic and exit")
-	publishCmd.Flags().StringVarP(&optFilePath, "file", "f", "", "send contents of the file to the topic and exit")
-	publishCmd.Flags().BoolVarP(&optRetain, "retain", "r", false, "retain as the last good message")
-	publishCmd.Flags().BoolP("null-message", "n", false, "send a null (zero length) message")
 }

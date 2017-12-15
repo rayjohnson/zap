@@ -32,6 +32,7 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -48,20 +49,37 @@ type MqttMessage struct {
 	Message string
 }
 
-// subscribeCmd represents the subscribe command
-var subscribeCmd = &cobra.Command{
-	Use:   "subscribe",
-	Short: "Listen to an MQTT server on a topic",
-	Long:  `Subscribe to a topic on the MQTT server`,
-	Run:   subscribe,
+func newSubscribeCommand() *cobra.Command {
+	var conOpts *connectionOptions
+
+	cmd := &cobra.Command{
+		Use:   "subscribe",
+		Short: "Listen to an MQTT server on a topic",
+		Long:  `Subscribe to a topic on the MQTT server`,
+		// TODO: put in long description for subscribe
+		Run: func(cmd *cobra.Command, args []string) {
+			runSubscribe(cmd.Flags(), conOpts)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
+	flags.StringVar(&optTemplate, "template", builtinTemplate, "template to use for output to stdout")
+	flags.StringVar(&optTopic, "topic", "#", "mqtt topic to listen to")
+	// TODO: add -C, --count option - after count of messages disconnect and exit
+	// TODO: -R option - not even sure about this one
+	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
+
+	conOpts = addConnectionFlags(flags)
+
+	return cmd
 }
 
-func subscribe(cmd *cobra.Command, args []string) {
+func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions) {
+	clientOpts := ParseBrokerInfo(flags, conOpts)
 
-	connOpts := ParseBrokerInfo(cmd, args)
-
-	PrintConnectionInfo()
-	stdoutTemplate = getTemplate(cmd)
+	PrintConnectionInfo(conOpts)
+	stdoutTemplate = getTemplate(flags, conOpts)
 
 	quit := make(chan bool)
 	c := make(chan os.Signal, 1)
@@ -79,7 +97,7 @@ func subscribe(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	client := MQTT.NewClient(connOpts)
+	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		exitWithError = true
@@ -88,7 +106,7 @@ func subscribe(cmd *cobra.Command, args []string) {
 	defer client.Disconnect(250)
 
 	if optVerbose {
-		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
+		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
 	}
 
 	if token := client.Subscribe(optTopic, byte(optQos), subscriptionHandler); token.Wait() && token.Error() != nil {
@@ -121,9 +139,9 @@ func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
 	fmt.Printf("%s", buf.String())
 }
 
-func getTemplate(cmd *cobra.Command) *template.Template {
-	if !cmd.Flags().Lookup("template").Changed {
-		if key := getCorrectConfigKey(optBroker, "template"); key != "" {
+func getTemplate(flags *pflag.FlagSet, conOpts *connectionOptions) *template.Template {
+	if !flags.Lookup("template").Changed {
+		if key := getCorrectConfigKey(conOpts.broker, "template"); key != "" {
 			optTemplate = viper.GetString(key)
 		}
 	}
@@ -135,14 +153,4 @@ func getTemplate(cmd *cobra.Command) *template.Template {
 	}
 
 	return theTemplate
-}
-
-func init() {
-	rootCmd.AddCommand(subscribeCmd)
-
-	// TODO: add -C, --count option - after count of messages disconnect and exit
-	// TODO: -R option - not even sure about this one
-	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
-	subscribeCmd.Flags().BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
-	subscribeCmd.Flags().StringVar(&optTemplate, "template", builtinTemplate, "template to use for output to stdout")
 }

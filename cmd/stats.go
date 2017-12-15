@@ -26,27 +26,40 @@ import (
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/rayjohnson/zap/viewstats"
 )
 
 const statsTopic = "$SYS/#"
 
-// statsCmd represents the stats command
-var statsCmd = &cobra.Command{
-	Use:   "stats",
-	Short: "Show stats reported by the MQTT broker",
-	Long: `Show stats reported by the MQTT broker
+func newStatsCommand() *cobra.Command {
+	var conOpts *connectionOptions
 
-TODO: a little more documentation about what the values mean`,
-	Run: stats,
+	cmd := &cobra.Command{
+		Use:   "stats",
+		Short: "Show stats reported by the MQTT broker",
+		Long: `Show stats reported by the MQTT broker
+
+The stats command subscribes to the brokers $SYS/# topics to get and
+display statistics for how the broker is running.  Not all brokers show
+the same information and you need to have permission to view those topics.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			runStats(cmd.Flags(), conOpts)
+		},
+	}
+
+	flags := cmd.Flags()
+	conOpts = addConnectionFlags(flags)
+
+	return cmd
 }
 
-func stats(cmd *cobra.Command, args []string) {
-	connOpts := ParseBrokerInfo(cmd, args)
-	connOpts.CleanSession = true
+func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) {
+	clientOpts := ParseBrokerInfo(flags, conOpts)
+	clientOpts.CleanSession = true
 
-	PrintConnectionInfo()
+	PrintConnectionInfo(conOpts)
 
 	exitWithError := false
 	defer func() {
@@ -55,7 +68,7 @@ func stats(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	client := MQTT.NewClient(connOpts)
+	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		fmt.Printf("Could not connect: %s\n", token.Error())
 		exitWithError = true
@@ -64,7 +77,7 @@ func stats(cmd *cobra.Command, args []string) {
 	defer client.Disconnect(250)
 
 	if optVerbose {
-		fmt.Printf("Connected to %s\n", connOpts.Servers[0])
+		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
 	}
 
 	viewstats.PrepViewer()
@@ -80,8 +93,4 @@ func stats(cmd *cobra.Command, args []string) {
 
 func statsHandler(client MQTT.Client, msg MQTT.Message) {
 	viewstats.AddStat(msg.Topic(), string(msg.Payload()))
-}
-
-func init() {
-	rootCmd.AddCommand(statsCmd)
 }
