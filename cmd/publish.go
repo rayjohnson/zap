@@ -51,6 +51,7 @@ data coming from stdin.`,
 			return runPublish(cmd.Flags(), conOpts)
 		},
 	}
+	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
 	flags.BoolP("stdin-line", "l", false, "send stdin data as message with each newline is a new message")

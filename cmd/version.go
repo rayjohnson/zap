@@ -32,11 +32,15 @@ import (
 var version string
 var revision string
 
-var genAutoComplete bool
-var genManPages bool
-var installDir string
+type versionOptions struct {
+	genAutoComplete bool
+	genManPages     bool
+	installDir      string
+}
 
 func newVersionCommand() *cobra.Command {
+	verOpts := versionOptions{}
+
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Shows version information about zap",
@@ -46,45 +50,52 @@ Run with the --generate-auto-complete option and a file named
 zap.sh will be generated for use in autocomplete scripts.  Use the
 --generate-man-pages option to generate man pages for the zap command.
 Use the --directory option to specify the location for any generated files`,
-		Run: versionCmd,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runVersion(cmd, verOpts)
+		},
 	}
+	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
-	flags.BoolVar(&genAutoComplete, "generate-auto-complete", false, "generates a bash autocomplete script zap.sh")
-	flags.BoolVar(&genManPages, "generate-man-pages", false, "generates the man pages for zap")
-	flags.StringVar(&installDir, "directory", ".", "directory to install generated files")
+	flags.BoolVar(&verOpts.genAutoComplete, "generate-auto-complete", false, "generates a bash autocomplete script zap.sh")
+	flags.BoolVar(&verOpts.genManPages, "generate-man-pages", false, "generates the man pages for zap")
+	flags.StringVar(&verOpts.installDir, "directory", ".", "directory to install generated files")
 
 	return cmd
 }
 
-func versionCmd(cmd *cobra.Command, args []string) {
+func runVersion(cmd *cobra.Command, verOpts versionOptions) error {
 
-	if genAutoComplete || genManPages {
+	if verOpts.genAutoComplete || verOpts.genManPages {
 		// Check the given directory
-		stat, err := os.Stat(installDir)
+		stat, err := os.Stat(verOpts.installDir)
 
-		if err != nil && !stat.IsDir() {
-			fmt.Println("--directory argument does not exist or is not a directory")
-			os.Exit(1)
+		if err != nil {
+			return err
+		}
+		if !stat.IsDir() {
+			return fmt.Errorf("--directory argument is not a directory")
 		}
 	}
 
-	if genAutoComplete {
-		path := filepath.Join(installDir, "zap.sh")
+	if verOpts.genAutoComplete {
+		path := filepath.Join(verOpts.installDir, "zap.sh")
 		cmd.Root().GenBashCompletionFile(path)
-		return
+		fmt.Println("Generated auto-complete script here: " + path)
 	}
 
-	if genManPages {
+	if verOpts.genManPages {
 		header := &doc.GenManHeader{
 			Title:   "ZAP",
 			Section: "1",
 		}
-		err := doc.GenManTree(cmd.Root(), header, installDir)
+		err := doc.GenManTree(cmd.Root(), header, verOpts.installDir)
 		if err != nil {
-			fmt.Printf("Error generating man pages: %s\n", err)
+			return err
 		}
+		fmt.Println("Generated man pages here: " + verOpts.installDir)
 	}
 
 	fmt.Println("zap version " + version + ", Revision: " + revision)
+	return nil
 }

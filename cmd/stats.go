@@ -47,6 +47,7 @@ the same information and you need to have permission to view those topics.`,
 			return runStats(cmd.Flags(), conOpts)
 		},
 	}
+	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
 	conOpts = addConnectionFlags(flags)

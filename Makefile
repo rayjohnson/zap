@@ -58,7 +58,8 @@ lint:  ## Run golint and go fmt on source base
 
 .PHONY: test
 test:  ## Run test suite (go test)
-	go test $(PKGS)
+	@mkdir -p reports
+	go test -cover $(PKGS)
 
 .PHONY: dep_graph
 dep_graph:  ## Generate a dependency graph from dep and graphvis

@@ -61,6 +61,7 @@ func newSubscribeCommand() *cobra.Command {
 			return runSubscribe(cmd.Flags(), conOpts)
 		},
 	}
+	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
 	flags.BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
