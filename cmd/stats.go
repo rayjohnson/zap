@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/spf13/cobra"
@@ -44,8 +43,8 @@ func newStatsCommand() *cobra.Command {
 The stats command subscribes to the brokers $SYS/# topics to get and
 display statistics for how the broker is running.  Not all brokers show
 the same information and you need to have permission to view those topics.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			runStats(cmd.Flags(), conOpts)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runStats(cmd.Flags(), conOpts)
 		},
 	}
 
@@ -55,24 +54,18 @@ the same information and you need to have permission to view those topics.`,
 	return cmd
 }
 
-func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) {
-	clientOpts := ParseBrokerInfo(flags, conOpts)
+func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) error {
+	clientOpts, err := ParseBrokerInfo(flags, conOpts)
+	if err != nil {
+		return err
+	}
 	clientOpts.CleanSession = true
 
 	PrintConnectionInfo(conOpts)
 
-	exitWithError := false
-	defer func() {
-		if exitWithError {
-			os.Exit(1)
-		}
-	}()
-
 	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		fmt.Printf("Could not connect: %s\n", token.Error())
-		exitWithError = true
-		return
+		return fmt.Errorf("could not connect: %s", token.Error())
 	}
 	defer client.Disconnect(250)
 
@@ -82,13 +75,12 @@ func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) {
 
 	viewstats.PrepViewer()
 	if token := client.Subscribe(statsTopic, byte(optQos), statsHandler); token.Wait() && token.Error() != nil {
-		exitWithError = true
-		fmt.Printf("Could not subscribe: %s\n", token.Error())
-		return
+		return fmt.Errorf("could not subscribe: %s", token.Error())
 	}
 	defer client.Unsubscribe(statsTopic)
 
 	viewstats.StartStatsDisplay()
+	return nil
 }
 
 func statsHandler(client MQTT.Client, msg MQTT.Message) {

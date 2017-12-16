@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 	"strings"
 	"testing"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
 
-func parseConOpts(args []string) (*connectionOptions, error) {
+func parseConOpts(args []string) (*MQTT.ClientOptions, error) {
 	flags := pflag.NewFlagSet("con", pflag.ContinueOnError)
 	flags.SetOutput(ioutil.Discard)
 	flags.Usage = nil
@@ -18,31 +21,58 @@ func parseConOpts(args []string) (*connectionOptions, error) {
 		return nil, err
 	}
 
-	// TODO - this is not interesting yet
-	// need to refactor a little more to do proper arg checking
-	return conOpts, nil
+	return ParseBrokerInfo(flags, conOpts)
 }
 
-func parseMustError(t *testing.T, args string) {
+func parseMustError(t *testing.T, args string) error {
 	_, err := parseConOpts(strings.Split(args, " "))
 	assert.Error(t, err, args)
+	return err
 }
 
-func mustParse(t *testing.T, args string) *connectionOptions {
-	conOpts, err := parseConOpts(strings.Split(args, " "))
+func mustParse(t *testing.T, args string) *MQTT.ClientOptions {
+	clientOpts, err := parseConOpts(strings.Split(args, " "))
 	assert.NoError(t, err)
-	return conOpts
+	return clientOpts
 }
 
 func TestBadOptions(t *testing.T) {
+	var err error
+
 	parseMustError(t, "--bad-option foo")
 	parseMustError(t, "--server foo  --bad-option")
+	err = parseMustError(t, "--keepalive badArg --server foo")
+	assert.Equal(t, err.Error(), "invalid argument \"badArg\" for \"-k, --keepalive\" flag: strconv.ParseInt: parsing \"badArg\": invalid syntax", "error message not right")
+	// parseMustError(t, "--insecure badArg")  //TODO - this should fail missing noArgs
 }
 
-func TestValidOptions(t *testing.T) {
-	mustParse(t, "--server foo") // TODO: need better arg checking
-	conOpts := mustParse(t, "--cert someCert --key someKey --cafile someCa")
-	assert.Equal(t, conOpts.certFile, "someCert", "they should be equal")
-	assert.Equal(t, conOpts.caFile, "someCa", "they should be equal")
-	assert.Equal(t, conOpts.keyFile, "someKey", "they should be equal")
+func TestClientId(t *testing.T) {
+	clientOpts := mustParse(t, "")
+	assert.Regexp(t, "^zap_[0-9]+$", clientOpts.ClientID)
+
+	clientOpts = mustParse(t, "--client-prefix foo-")
+	assert.Regexp(t, "^foo-[0-9]+$", clientOpts.ClientID)
+
+	clientOpts = mustParse(t, "--id myid --client-prefix foo-")
+	assert.Equal(t, clientOpts.ClientID, "myid")
+}
+
+func TestOptions(t *testing.T) {
+	clientOpts := mustParse(t, "--server foo") // TODO: need better arg checking
+	assert.Equal(t, clientOpts.Servers[0].Path, "foo", "they should be equal")
+}
+
+func TestCertOptions(t *testing.T) {
+	clientOpts := mustParse(t, "")
+	assert.Equal(t, clientOpts.TLSConfig.ClientAuth, tls.NoClientCert)
+	assert.Nil(t, clientOpts.TLSConfig.RootCAs)
+
+	err := parseMustError(t, "--cert someCert")
+	assert.Equal(t, err.Error(), "for tls: both --key and --cert options must be set")
+
+	err = parseMustError(t, "--cert noFile --key noFile")
+	assert.Equal(t, err.Error(), "open noFile: no such file or directory")
+
+	err = parseMustError(t, "--cafile noCaFile")
+	assert.Equal(t, err.Error(), "open noCaFile: no such file or directory")
 }

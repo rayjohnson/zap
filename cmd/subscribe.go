@@ -57,8 +57,8 @@ func newSubscribeCommand() *cobra.Command {
 		Short: "Listen to an MQTT server on a topic",
 		Long:  `Subscribe to a topic on the MQTT server`,
 		// TODO: put in long description for subscribe
-		Run: func(cmd *cobra.Command, args []string) {
-			runSubscribe(cmd.Flags(), conOpts)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSubscribe(cmd.Flags(), conOpts)
 		},
 	}
 
@@ -75,11 +75,17 @@ func newSubscribeCommand() *cobra.Command {
 	return cmd
 }
 
-func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions) {
-	clientOpts := ParseBrokerInfo(flags, conOpts)
+func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions) error {
+	clientOpts, err := ParseBrokerInfo(flags, conOpts)
+	if err != nil {
+		return err
+	}
 
 	PrintConnectionInfo(conOpts)
-	stdoutTemplate = getTemplate(flags, conOpts)
+	stdoutTemplate, err = getTemplate(flags, conOpts)
+	if err != nil {
+		return err
+	}
 
 	quit := make(chan bool)
 	c := make(chan os.Signal, 1)
@@ -90,18 +96,9 @@ func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions) {
 		quit <- true
 	}()
 
-	exitWithError := false
-	defer func() {
-		if exitWithError {
-			os.Exit(1)
-		}
-	}()
-
 	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		fmt.Printf("Could not connect: %s\n", token.Error())
-		exitWithError = true
-		return
+		return fmt.Errorf("could not connect: %s", token.Error())
 	}
 	defer client.Disconnect(250)
 
@@ -110,9 +107,7 @@ func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions) {
 	}
 
 	if token := client.Subscribe(optTopic, byte(optQos), subscriptionHandler); token.Wait() && token.Error() != nil {
-		exitWithError = true
-		fmt.Printf("Could not subscribe: %s\n", token.Error())
-		return
+		return fmt.Errorf("could not subscribe: %s", token.Error())
 	}
 	defer client.Unsubscribe(optTopic)
 
@@ -125,6 +120,7 @@ loop:
 		}
 	}
 
+	return nil
 }
 
 func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
@@ -134,23 +130,17 @@ func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
 
 	err := stdoutTemplate.Execute(&buf, data)
 	if err != nil {
-		fmt.Printf("error using template: %s\n", err)
+		fmt.Printf("error using template: %s", err)
 	}
 	fmt.Printf("%s", buf.String())
 }
 
-func getTemplate(flags *pflag.FlagSet, conOpts *connectionOptions) *template.Template {
+func getTemplate(flags *pflag.FlagSet, conOpts *connectionOptions) (*template.Template, error) {
 	if !flags.Lookup("template").Changed {
 		if key := getCorrectConfigKey(conOpts.broker, "template"); key != "" {
 			optTemplate = viper.GetString(key)
 		}
 	}
 
-	theTemplate, err := template.New("stdout").Parse(optTemplate)
-	if err != nil {
-		fmt.Printf("error in template: %s\n", err)
-		os.Exit(1)
-	}
-
-	return theTemplate
+	return template.New("stdout").Parse(optTemplate)
 }

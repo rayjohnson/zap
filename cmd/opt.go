@@ -75,7 +75,7 @@ func getCorrectConfigKey(broker string, key string) string {
 
 // ParseBrokerInfo is called by subcommands tp parse the global option
 // values related to connecting to the mqtt broker.
-func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) *MQTT.ClientOptions {
+func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.ClientOptions, error) {
 	// TODO: this whole routine needs a major refactor
 
 	// If --broker was set make sure the section is in the config file
@@ -84,14 +84,11 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) *MQTT.Client
 			// TODO: maybe call InConfig
 			table := viper.Sub(conOpts.broker)
 			if table == nil {
-				fmt.Printf("broker \"%s\" could not be found in the config file\n", conOpts.broker)
-				os.Exit(1)
-			} else {
-				list := table.AllKeys()
-				if len(list) == 0 {
-					fmt.Printf("broker \"%s\" has no keys in the config file\n", conOpts.broker)
-					os.Exit(1)
-				}
+				return nil, fmt.Errorf("broker \"%s\" could not be found in the config file", conOpts.broker)
+			}
+			list := table.AllKeys()
+			if len(list) == 0 {
+				return nil, fmt.Errorf("broker \"%s\" has no keys in the config file", conOpts.broker)
 			}
 		}
 	}
@@ -146,8 +143,7 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) *MQTT.Client
 		}
 	}
 	if optQos < 0 || optQos > 2 {
-		fmt.Println("qos value must or 0, 1 or 2")
-		os.Exit(1)
+		return nil, fmt.Errorf("qos value must or 0, 1 or 2")
 	}
 
 	if !fs.Lookup("keepalive").Changed {
@@ -156,11 +152,11 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) *MQTT.Client
 		}
 	}
 
-	if !fs.Lookup("topic").Changed {
-		if key := getCorrectConfigKey(broker, "topic"); key != "" {
-			optTopic = viper.GetString(key)
-		}
-	}
+	// if !fs.Lookup("topic").Changed {
+	// 	if key := getCorrectConfigKey(broker, "topic"); key != "" {
+	// 		optTopic = viper.GetString(key)
+	// 	}
+	// }
 
 	if !fs.Lookup("client-prefix").Changed {
 		if key := getCorrectConfigKey(broker, "client-prefix"); key != "" {
@@ -198,13 +194,11 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) *MQTT.Client
 		// make sure both options are set
 		// TODO: check that these files exist for better error message
 		if conOpts.certFile == "" || conOpts.keyFile == "" {
-			fmt.Println("for tls: both --key and --cert options must be set")
-			os.Exit(1)
+			return nil, fmt.Errorf("for tls: both --key and --cert options must be set")
 		}
 		cert, err := tls.LoadX509KeyPair(conOpts.certFile, conOpts.keyFile)
 		if err != nil {
-			fmt.Printf("tlc error: %s\n", err)
-			os.Exit(1)
+			return nil, err
 		}
 
 		tlsConfig.Certificates = []tls.Certificate{cert}
@@ -216,8 +210,8 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) *MQTT.Client
 		// Load CA cert
 		caCert, err := ioutil.ReadFile(conOpts.caFile)
 		if err != nil {
-			fmt.Printf("could not read cafile: %s\n", err)
-			os.Exit(1)
+			return nil, err
+			// fmt.Printf("could not read cafile: %s\n", err). TODO: should error be more specific?
 		}
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
@@ -225,7 +219,7 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) *MQTT.Client
 	}
 	clientOpts.SetTLSConfig(&tlsConfig)
 
-	return clientOpts
+	return clientOpts, nil
 }
 
 // PrintConnectionInfo will so all the args used if verbose is on

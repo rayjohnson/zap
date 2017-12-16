@@ -47,8 +47,8 @@ func newPublishCommand() *cobra.Command {
 
 Multiple options are available to send a single argument, a whole file, or
 data coming from stdin.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			runPublish(cmd.Flags(), conOpts)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runPublish(cmd.Flags(), conOpts)
 		},
 	}
 
@@ -66,7 +66,7 @@ data coming from stdin.`,
 	return cmd
 }
 
-func validatePublishOptions(flags *pflag.FlagSet) {
+func validatePublishOptions(flags *pflag.FlagSet) error {
 	var count = 0
 
 	if flags.Lookup("message").Changed {
@@ -86,22 +86,27 @@ func validatePublishOptions(flags *pflag.FlagSet) {
 	}
 
 	if count == 0 {
-		fmt.Println("must specify one of --message, --file, --stdin-line, --stdin-file, or --null-message to send any data")
-		os.Exit(1)
+		return fmt.Errorf("must specify one of --message, --file, --stdin-line, --stdin-file, or --null-message to send any data")
 	}
 
 	if count > 1 {
-		fmt.Println("only one of --message, --file, --stdin-line, --stdin-file, or --null-message can be used")
-		os.Exit(1)
+		return fmt.Errorf("only one of --message, --file, --stdin-line, --stdin-file, or --null-message can be used")
 	}
 
+	return nil
 }
 
-func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions) {
-	clientOpts := ParseBrokerInfo(flags, conOpts)
+func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions) error {
+	clientOpts, err := ParseBrokerInfo(flags, conOpts)
+	if err != nil {
+		return err
+	}
 	clientOpts.CleanSession = true
 
-	validatePublishOptions(flags)
+	err = validatePublishOptions(flags)
+	if err != nil {
+		return err
+	}
 
 	PrintConnectionInfo(conOpts)
 
@@ -114,9 +119,7 @@ func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions) {
 
 	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		fmt.Printf("Could not connect: %s\n", token.Error())
-		exitWithError = true
-		return
+		return fmt.Errorf("could not connect: %s", token.Error())
 	}
 	defer client.Disconnect(250)
 
@@ -139,16 +142,12 @@ func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions) {
 		if _, err := os.Stat(optFilePath); !os.IsNotExist(err) {
 			buf, err := ioutil.ReadFile(optFilePath) // just pass the file name
 			if err != nil {
-				fmt.Print("error reading file: \"%s\"\n", err)
-				exitWithError = true
-				return
+				return err
 			}
 
 			client.Publish(optTopic, byte(optQos), optRetain, string(buf))
 		} else {
-			fmt.Printf("the file \"%s\" does not exist\n", optFilePath)
-			exitWithError = true
-			return
+			return err
 		}
 	}
 
@@ -159,7 +158,6 @@ func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions) {
 		for {
 			message, err := stdin.ReadString('\n')
 			if err == io.EOF {
-				fmt.Printf("message sent or EOF\n")
 				break
 			}
 			client.Publish(optTopic, byte(optQos), optRetain, message)
@@ -169,12 +167,14 @@ func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions) {
 	if flags.Lookup("stdin-file").Changed {
 		data, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			fmt.Printf("error reading file: %s\n", err)
-			exitWithError = true
-			return
+			return err
 		}
 		client.Publish(optTopic, byte(optQos), optRetain, data)
 	}
 
-	fmt.Printf("message sent\n")
+	if optVerbose {
+		fmt.Printf("message sent\n")
+	}
+
+	return nil
 }
