@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -76,7 +77,6 @@ func getCorrectConfigKey(broker string, key string) string {
 // ParseBrokerInfo is called by subcommands tp parse the global option
 // values related to connecting to the mqtt broker.
 func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.ClientOptions, error) {
-	// TODO: this whole routine needs a major refactor
 
 	// If --broker was set make sure the section is in the config file
 	if fs.Lookup("broker").Changed {
@@ -185,6 +185,10 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.Clien
 	clientOpts.SetPassword(conOpts.password)
 	clientOpts.SetCleanSession(cleanSession)
 	clientOpts.SetKeepAlive(time.Duration(conOpts.keepAlive) * time.Second)
+
+	if _, err := url.ParseRequestURI(conOpts.server); err != nil {
+		return nil, err
+	}
 	clientOpts.AddBroker(conOpts.server)
 
 	// tls set up
@@ -192,7 +196,6 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.Clien
 	// if either option is set
 	if conOpts.certFile != "" || conOpts.keyFile != "" {
 		// make sure both options are set
-		// TODO: check that these files exist for better error message
 		if conOpts.certFile == "" || conOpts.keyFile == "" {
 			return nil, fmt.Errorf("for tls: both --key and --cert options must be set")
 		}

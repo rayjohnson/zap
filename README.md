@@ -168,6 +168,27 @@ Messages Retained Count : n/a
 
 If you have any ideas on how this could be made more useful please let me know!
 
+## Bash Completion
+
+The pre-built executable packages has a zap.sh file that can be used for bash completion.
+The script can be generated from zap itself with the following command:
+```bash
+$ zap version --generate-auto-complete --directory .
+```
+
+You need bash completion running on your machine.  All standard (non-minimal) installations
+of Linux would already have it.  
+
+On a Mac you may need to do ```brew install bash-completion```.
+
+Place the completion script zap.sh in /etc/bash_completion.d/ (or /usr/local/etc/bash_completion.d/ on a Mac):
+
+Then yoou need to add the following to your ```~/.bash_profile``` (adjusting paths as needed).
+```bash
+[ -f /usr/local/etc/bash_completion ] && . /usr/local/etc/bash_completion
+[ -f /usr/local/etc/zap.sh ] && . /usr/local/etc/zap.sh
+```
+
 ## Building the source
 
 This project depends on the following tools:

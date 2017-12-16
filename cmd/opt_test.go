@@ -58,8 +58,11 @@ func TestClientId(t *testing.T) {
 }
 
 func TestOptions(t *testing.T) {
-	clientOpts := mustParse(t, "--server foo") // TODO: need better arg checking
-	assert.Equal(t, clientOpts.Servers[0].Path, "foo", "they should be equal")
+	clientOpts := mustParse(t, "--server tcp://localhost:1883")
+	assert.Equal(t, "tcp://localhost:1883", clientOpts.Servers[0].String(), "they should be equal")
+
+	err := parseMustError(t, "--server foo")
+	assert.Equal(t, "parse foo: invalid URI for request", err.Error())
 }
 
 func TestCertOptions(t *testing.T) {

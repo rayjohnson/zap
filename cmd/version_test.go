@@ -24,6 +24,7 @@ func TestVersionCmd(t *testing.T) {
 	err := cmd.Execute()
 	assert.Equal(t, "stat bad_dir: no such file or directory", err.Error())
 
+	// TODO: would be nice to test generation of actual files
 	// Create tmp dir for generated files
 	// dir, err := ioutil.TempDir()
 
