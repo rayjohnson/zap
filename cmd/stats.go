@@ -31,6 +31,7 @@ import (
 )
 
 const statsTopic = "$SYS/#"
+const statsQos = 0
 
 func newStatsCommand() *cobra.Command {
 	var conOpts *connectionOptions
@@ -62,7 +63,7 @@ func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) error {
 	}
 	clientOpts.CleanSession = true
 
-	PrintConnectionInfo(conOpts)
+	PrintConnectionInfo(conOpts, nil, nil)
 
 	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -75,7 +76,7 @@ func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) error {
 	}
 
 	viewstats.PrepViewer()
-	if token := client.Subscribe(statsTopic, byte(optQos), statsHandler); token.Wait() && token.Error() != nil {
+	if token := client.Subscribe(statsTopic, statsQos, statsHandler); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("could not subscribe: %s", token.Error())
 	}
 	defer client.Unsubscribe(statsTopic)

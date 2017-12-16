@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// TODO: get rid of the global vars
 type connectionOptions struct {
 	insecure     bool
 	cfgFile      string
@@ -31,8 +30,6 @@ type connectionOptions struct {
 	keyFile      string
 	caFile       string
 }
-
-var cfgFile string
 
 // addConnectionFlags adds to a pFlag set the options related to connecting to a broker
 func addConnectionFlags(fs *pflag.FlagSet) *connectionOptions {
@@ -52,9 +49,6 @@ func addConnectionFlags(fs *pflag.FlagSet) *connectionOptions {
 	fs.StringVar(&conOpts.certFile, "cert", "", "path to client.crt file used to connect to server")
 	fs.StringVar(&conOpts.keyFile, "key", "", "path to client.key file used to connect to server")
 	fs.BoolVar(&conOpts.insecure, "insecure", false, "skips verification for SSL connections")
-
-	// TODO: should this always be here?  Or is it like clearsession and topic?
-	fs.IntVar(&optQos, "qos", 0, "qos setting")
 
 	return conOpts
 }
@@ -137,15 +131,6 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.Clien
 		}
 	}
 
-	if !fs.Lookup("qos").Changed {
-		if key := getCorrectConfigKey(broker, "qos"); key != "" {
-			optQos = viper.GetInt(key)
-		}
-	}
-	if optQos < 0 || optQos > 2 {
-		return nil, fmt.Errorf("qos value must or 0, 1 or 2")
-	}
-
 	if !fs.Lookup("keepalive").Changed {
 		if key := getCorrectConfigKey(broker, "keepalive"); key != "" {
 			conOpts.keepAlive = viper.GetInt(key)
@@ -183,7 +168,6 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.Clien
 	clientOpts.SetClientID(conOpts.clientID)
 	clientOpts.SetUsername(conOpts.username)
 	clientOpts.SetPassword(conOpts.password)
-	clientOpts.SetCleanSession(cleanSession)
 	clientOpts.SetKeepAlive(time.Duration(conOpts.keepAlive) * time.Second)
 
 	if _, err := url.ParseRequestURI(conOpts.server); err != nil {
@@ -226,22 +210,30 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.Clien
 }
 
 // PrintConnectionInfo will so all the args used if verbose is on
-func PrintConnectionInfo(conOpts *connectionOptions) {
+func PrintConnectionInfo(conOpts *connectionOptions, subOpts *subscribeOptions, pubOpts *publishOptions) {
 	if optVerbose {
 		fmt.Println("Connecting to server with following parameters")
 		if conOpts.broker != "" {
-			fmt.Println(". From broker config: ", conOpts.broker)
+			fmt.Println("  From broker config: ", conOpts.broker)
 		}
 		fmt.Println("  Server: ", conOpts.server)
 		if conOpts.keyFile != "" {
 			fmt.Println("  Key path: ", conOpts.keyFile)
 			fmt.Println("  Cert path: ", conOpts.certFile)
 		}
+		if conOpts.caFile != "" {
+			fmt.Println("  CA path: ", conOpts.caFile)
+		}
 		fmt.Println("  ClientId: ", conOpts.clientID)
 		fmt.Println("  Username: ", conOpts.username)
 		fmt.Println("  Password: ", conOpts.password)
-		fmt.Println("  QOS: ", optQos)
-		fmt.Println("  Retain: ", optRetain)
-		fmt.Println("  Topic: ", optTopic)
+		if subOpts != nil {
+			fmt.Println("  QOS: ", subOpts.qos)
+			fmt.Println("  Topic: ", subOpts.topic)
+		}
+		if pubOpts != nil {
+			fmt.Println("  QOS: ", pubOpts.qos)
+			fmt.Println("  Topic: ", pubOpts.topic)
+		}
 	}
 }

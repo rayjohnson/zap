@@ -38,10 +38,7 @@ import (
 
 const builtinTemplate = "Received message on topic: {{.Topic}}\nMessage: {{.Message}}\n"
 
-var cleanSession bool
-
-var optTemplate string
-var stdoutTemplate *template.Template
+//var stdoutTemplate *template.Template
 
 // MqttMessage is the struct passed to the template engine
 type MqttMessage struct {
@@ -49,8 +46,26 @@ type MqttMessage struct {
 	Message string
 }
 
+type subscribeOptions struct {
+	cleanSession   bool
+	templateString string
+	topic          string
+	count          int
+	skipRetained   bool
+	qos            int
+}
+
+type messageOptions struct {
+	stdoutTemplate *template.Template
+	quit           chan bool
+	count          int
+	numMsgs        int
+	skipRetained   bool
+}
+
 func newSubscribeCommand() *cobra.Command {
 	var conOpts *connectionOptions
+	subOpts := subscribeOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "subscribe",
@@ -58,17 +73,19 @@ func newSubscribeCommand() *cobra.Command {
 		Long:  `Subscribe to a topic on the MQTT server`,
 		// TODO: put in long description for subscribe
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSubscribe(cmd.Flags(), conOpts)
+			return runSubscribe(cmd.Flags(), conOpts, subOpts)
 		},
 	}
 	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
-	flags.BoolVar(&cleanSession, "clean-session", true, "set to false and will send queued up messages if mqtt has persistence - be sure to set client id")
-	flags.StringVar(&optTemplate, "template", builtinTemplate, "template to use for output to stdout")
-	flags.StringVar(&optTopic, "topic", "#", "mqtt topic to listen to")
-	// TODO: add -C, --count option - after count of messages disconnect and exit
-	// TODO: -R option - not even sure about this one
+	flags.BoolVar(&subOpts.cleanSession, "clean-session", true, "set to false and mqtt will send queued up messages if service disconnects and restarts")
+	flags.StringVar(&subOpts.templateString, "template", builtinTemplate, "template to use for output to stdout")
+	flags.StringVar(&subOpts.topic, "topic", "#", "mqtt topic to listen to")
+	flags.IntVar(&subOpts.count, "count", -1, "after count of messages disconnect and exit")
+	flags.BoolVar(&subOpts.skipRetained, "skip-retained", false, "skip printing messages marked as retained from mqtt")
+	flags.IntVar(&subOpts.qos, "qos", 0, "qos setting for inbound messages")
+
 	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
 
 	conOpts = addConnectionFlags(flags)
@@ -76,17 +93,25 @@ func newSubscribeCommand() *cobra.Command {
 	return cmd
 }
 
-func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions) error {
+func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions, subOpts subscribeOptions) error {
 	clientOpts, err := ParseBrokerInfo(flags, conOpts)
 	if err != nil {
 		return err
 	}
+	if subOpts.cleanSession {
+		clientOpts.CleanSession = subOpts.cleanSession
+	}
 
-	PrintConnectionInfo(conOpts)
-	stdoutTemplate, err = getTemplate(flags, conOpts)
+	if subOpts.qos < 0 || subOpts.qos > 2 {
+		return fmt.Errorf("--qos value must or 0, 1 or 2")
+	}
+
+	stdoutTemplate, err := getTemplate(flags, conOpts, subOpts)
 	if err != nil {
 		return err
 	}
+
+	PrintConnectionInfo(conOpts, &subOpts, nil)
 
 	quit := make(chan bool)
 	c := make(chan os.Signal, 1)
@@ -107,10 +132,18 @@ func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions) error {
 		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
 	}
 
-	if token := client.Subscribe(optTopic, byte(optQos), subscriptionHandler); token.Wait() && token.Error() != nil {
+	msgOpts := messageOptions{}
+	msgOpts.quit = quit
+	msgOpts.count = subOpts.count
+	msgOpts.skipRetained = subOpts.skipRetained
+	msgOpts.stdoutTemplate = stdoutTemplate
+
+	if token := client.Subscribe(subOpts.topic, byte(subOpts.qos), func(client MQTT.Client, msg MQTT.Message) {
+		subscriptionHandler(client, msg, &msgOpts)
+	}); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("could not subscribe: %s", token.Error())
 	}
-	defer client.Unsubscribe(optTopic)
+	defer client.Unsubscribe(subOpts.topic)
 
 loop:
 	for {
@@ -124,24 +157,47 @@ loop:
 	return nil
 }
 
-func subscriptionHandler(client MQTT.Client, msg MQTT.Message) {
-	data := MqttMessage{Topic: msg.Topic(), Message: string(msg.Payload())}
-
+func subscriptionHandler(client MQTT.Client, msg MQTT.Message, msgOpts *messageOptions) {
 	var buf bytes.Buffer
+	data := MqttMessage{Topic: msg.Topic(), Message: string(msg.Payload())}
+	doExit := false
 
-	err := stdoutTemplate.Execute(&buf, data)
-	if err != nil {
-		fmt.Printf("error using template: %s", err)
+	// skipping retained messages does not count toward --count value
+	if msgOpts.skipRetained && msg.Retained() {
+		return
 	}
-	fmt.Printf("%s", buf.String())
-}
 
-func getTemplate(flags *pflag.FlagSet, conOpts *connectionOptions) (*template.Template, error) {
-	if !flags.Lookup("template").Changed {
-		if key := getCorrectConfigKey(conOpts.broker, "template"); key != "" {
-			optTemplate = viper.GetString(key)
+	// This handles the --count option
+	if msgOpts.count > 0 {
+		// TODO: this may be a race condition
+		msgOpts.numMsgs++
+		if msgOpts.numMsgs > msgOpts.count {
+			// Skip displaying messages after we hit count
+			return
+		}
+		if msgOpts.numMsgs == msgOpts.count {
+			doExit = true
 		}
 	}
 
-	return template.New("stdout").Parse(optTemplate)
+	err := msgOpts.stdoutTemplate.Execute(&buf, data)
+	if err != nil {
+		fmt.Printf("error using template: %s", err)
+		return
+	}
+	fmt.Printf("%s", buf.String())
+
+	if doExit {
+		msgOpts.quit <- true
+	}
+}
+
+func getTemplate(flags *pflag.FlagSet, conOpts *connectionOptions, subOpts subscribeOptions) (*template.Template, error) {
+	if !flags.Lookup("template").Changed {
+		if key := getCorrectConfigKey(conOpts.broker, "template"); key != "" {
+			subOpts.templateString = viper.GetString(key)
+		}
+	}
+
+	return template.New("stdout").Parse(subOpts.templateString)
 }
