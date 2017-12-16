@@ -89,11 +89,7 @@ func initConfig() {
 	}
 
 	// If a config file is found, read it in.
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Printf("Error reading config file: %s\n", err)
-		os.Exit(1)
-	}
+	viper.ReadInConfig()
 
 	// Uncomment these to turn on debugging from within the mqtt library.
 	MQTT.ERROR = log.New(os.Stdout,
