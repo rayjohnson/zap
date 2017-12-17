@@ -69,6 +69,7 @@ func newSubscribeCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "subscribe",
+		Args:  cobra.NoArgs,
 		Short: "Listen to an MQTT server on a topic",
 		Long:  `Subscribe to a topic on the MQTT server`,
 		// TODO: put in long description for subscribe

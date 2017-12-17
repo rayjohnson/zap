@@ -20,8 +20,13 @@ func TestVersionCmd(t *testing.T) {
 	// With no args should just print and no err
 	assert.Nil(t, cmd.Execute())
 
-	cmd.SetArgs([]string{"--directory", "bad_dir", "--generate-auto-complete"})
+	// extra args should fail
+	cmd.SetArgs([]string{"--generate-auto-complete", "foo", "bar"})
 	err := cmd.Execute()
+	assert.Equal(t, "unknown command \"foo\" for \"version\"", err.Error())
+
+	cmd.SetArgs([]string{"--directory", "bad_dir", "--generate-auto-complete"})
+	err = cmd.Execute()
 	assert.Equal(t, "stat bad_dir: no such file or directory", err.Error())
 
 	// TODO: would be nice to test generation of actual files

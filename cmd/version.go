@@ -43,6 +43,7 @@ func newVersionCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "version",
+		Args:  cobra.NoArgs,
 		Short: "Shows version information about zap",
 		Long: `Shows version information about zap
 

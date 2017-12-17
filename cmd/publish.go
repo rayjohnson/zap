@@ -50,6 +50,7 @@ func newPublishCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "publish",
+		Args:  cobra.NoArgs,
 		Short: "Publish into MQTT",
 		Long: `The publish command allows you to send data on an MQTT topic
 

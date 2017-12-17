@@ -38,6 +38,7 @@ func newStatsCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "stats",
+		Args:  cobra.NoArgs,
 		Short: "Show stats reported by the MQTT broker",
 		Long: `Show stats reported by the MQTT broker
 
