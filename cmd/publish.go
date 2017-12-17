@@ -87,6 +87,10 @@ func validatePublishOptions(pubOpts publishOptions) error {
 		count++
 	}
 	if pubOpts.filePath != "" {
+		if _, err := os.Stat(pubOpts.filePath); os.IsNotExist(err) {
+			return err
+		}
+
 		count++
 	}
 	if pubOpts.doStdinLine {
@@ -147,16 +151,12 @@ func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions, pubOpts publis
 
 	if pubOpts.filePath != "" {
 		// send entire file as message
-		if _, err := os.Stat(pubOpts.filePath); !os.IsNotExist(err) {
-			buf, err := ioutil.ReadFile(pubOpts.filePath) // just pass the file name
-			if err != nil {
-				return err
-			}
-
-			client.Publish(pubOpts.topic, byte(pubOpts.qos), pubOpts.retain, string(buf))
-		} else {
+		buf, err := ioutil.ReadFile(pubOpts.filePath)
+		if err != nil {
 			return err
 		}
+
+		client.Publish(pubOpts.topic, byte(pubOpts.qos), pubOpts.retain, string(buf))
 	}
 
 	if pubOpts.doStdinLine {
