@@ -70,12 +70,12 @@ func TestCertOptions(t *testing.T) {
 	assert.Equal(t, clientOpts.TLSConfig.ClientAuth, tls.NoClientCert)
 	assert.Nil(t, clientOpts.TLSConfig.RootCAs)
 
-	err := parseMustError(t, "--cert someCert")
-	assert.Equal(t, err.Error(), "for tls: both --key and --cert options must be set")
+	err := parseMustError(t, "--tls-cert someCert")
+	assert.Equal(t, err.Error(), "for tls: both --tls-key and --tls-cert options must be set")
 
-	err = parseMustError(t, "--cert noFile --key noFile")
+	err = parseMustError(t, "--tls-cert noFile --tls-key noFile")
 	assert.Equal(t, err.Error(), "open noFile: no such file or directory")
 
-	err = parseMustError(t, "--cafile noCaFile")
+	err = parseMustError(t, "--tls-cacert noCaFile")
 	assert.Equal(t, err.Error(), "open noCaFile: no such file or directory")
 }

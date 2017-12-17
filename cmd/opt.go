@@ -35,20 +35,20 @@ type connectionOptions struct {
 func addConnectionFlags(fs *pflag.FlagSet) *connectionOptions {
 	conOpts := &connectionOptions{}
 
-	fs.StringVar(&cfgFile, "config", "", "config file (default is $HOME/.zap.toml)")
-	fs.BoolVar(&optVerbose, "verbose", false, "give more verbose information")
+	fs.StringVar(&cfgFile, "config", "", "Config file path (default is $HOME/.zap.toml)")
+	fs.BoolVar(&optVerbose, "verbose", false, "Give more verbose information")
 
-	fs.StringVar(&conOpts.server, "server", "tcp://127.0.0.1:1883", "location of MQTT server")
-	fs.StringVar(&conOpts.username, "username", "", "username for accessing MQTT")
-	fs.StringVar(&conOpts.password, "password", "", "password for accessing MQTT")
-	fs.StringVarP(&conOpts.clientID, "id", "i", "", "id to use for this client (default is generated from client-prefix)")
-	fs.StringVar(&conOpts.clientPrefix, "client-prefix", "zap_", "prefix to use to generate a client id if none is specified")
-	fs.IntVarP(&conOpts.keepAlive, "keepalive", "k", 60, "the number of seconds after which a PING is sent to the broker")
-	fs.StringVarP(&conOpts.broker, "broker", "b", "", "broker configuration")
-	fs.StringVar(&conOpts.caFile, "cafile", "", "path to ca file used to certify your cert")
-	fs.StringVar(&conOpts.certFile, "cert", "", "path to client.crt file used to connect to server")
-	fs.StringVar(&conOpts.keyFile, "key", "", "path to client.key file used to connect to server")
-	fs.BoolVar(&conOpts.insecure, "insecure", false, "skips verification for SSL connections")
+	fs.StringVar(&conOpts.server, "server", "tcp://127.0.0.1:1883", "Url of MQTT server")
+	fs.StringVar(&conOpts.username, "username", "", "Username for accessing MQTT")
+	fs.StringVar(&conOpts.password, "password", "", "Password for accessing MQTT")
+	fs.StringVarP(&conOpts.clientID, "id", "i", "", "ID to use for this client (default is generated from client-prefix)")
+	fs.StringVar(&conOpts.clientPrefix, "client-prefix", "zap_", "Prefix to use to generate a client id if none is specified")
+	fs.IntVarP(&conOpts.keepAlive, "keepalive", "k", 60, "The number of seconds after which a PING is sent to the broker")
+	fs.StringVarP(&conOpts.broker, "broker", "b", "", "Broker configuration")
+	fs.StringVar(&conOpts.caFile, "tls-cacert", "", "Trust certs signed only by this CA")
+	fs.StringVar(&conOpts.certFile, "tls-cert", "", "Path to TLS certificate file")
+	fs.StringVar(&conOpts.keyFile, "tls-key", "", "Path to TLS key file")
+	fs.BoolVar(&conOpts.insecure, "tls-skip-verify", false, "Skips verification for TLS")
 
 	return conOpts
 }
@@ -107,26 +107,26 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.Clien
 		}
 	}
 
-	if !fs.Lookup("cert").Changed {
-		if key := getCorrectConfigKey(broker, "cert"); key != "" {
+	if !fs.Lookup("tls-cert").Changed {
+		if key := getCorrectConfigKey(broker, "tls-cert"); key != "" {
 			conOpts.certFile = viper.GetString(key)
 		}
 	}
 
-	if !fs.Lookup("key").Changed {
-		if key := getCorrectConfigKey(broker, "key"); key != "" {
+	if !fs.Lookup("tls-key").Changed {
+		if key := getCorrectConfigKey(broker, "tls-key"); key != "" {
 			conOpts.keyFile = viper.GetString(key)
 		}
 	}
 
-	if !fs.Lookup("cafile").Changed {
+	if !fs.Lookup("tls-cacert").Changed {
 		if key := getCorrectConfigKey(broker, "cafile"); key != "" {
 			conOpts.caFile = viper.GetString(key)
 		}
 	}
 
-	if !fs.Lookup("insecure").Changed {
-		if key := getCorrectConfigKey(broker, "insecure"); key != "" {
+	if !fs.Lookup("tls-skip-verify").Changed {
+		if key := getCorrectConfigKey(broker, "tls-skip-verify"); key != "" {
 			conOpts.insecure = viper.GetBool(key)
 		}
 	}
@@ -181,7 +181,7 @@ func ParseBrokerInfo(fs *pflag.FlagSet, conOpts *connectionOptions) (*MQTT.Clien
 	if conOpts.certFile != "" || conOpts.keyFile != "" {
 		// make sure both options are set
 		if conOpts.certFile == "" || conOpts.keyFile == "" {
-			return nil, fmt.Errorf("for tls: both --key and --cert options must be set")
+			return nil, fmt.Errorf("for tls: both --tls-key and --tls-cert options must be set")
 		}
 		cert, err := tls.LoadX509KeyPair(conOpts.certFile, conOpts.keyFile)
 		if err != nil {
@@ -218,11 +218,14 @@ func PrintConnectionInfo(conOpts *connectionOptions, subOpts *subscribeOptions, 
 		}
 		fmt.Println("  Server: ", conOpts.server)
 		if conOpts.keyFile != "" {
-			fmt.Println("  Key path: ", conOpts.keyFile)
-			fmt.Println("  Cert path: ", conOpts.certFile)
+			fmt.Println("  TLS Key path: ", conOpts.keyFile)
+			fmt.Println("  TLS Cert path: ", conOpts.certFile)
 		}
 		if conOpts.caFile != "" {
-			fmt.Println("  CA path: ", conOpts.caFile)
+			fmt.Println("  TLS CA path: ", conOpts.caFile)
+		}
+		if conOpts.insecure {
+			fmt.Println("  TLS Skip Verify: ", conOpts.insecure)
 		}
 		fmt.Println("  ClientId: ", conOpts.clientID)
 		fmt.Println("  Username: ", conOpts.username)

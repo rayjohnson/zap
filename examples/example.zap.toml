@@ -23,21 +23,21 @@ server = "tcp://test.mosquitto.org:1883"
 # This establishes an encrypted session but skipping the verification with a CA
 # See http://test.mosquitto.org for details on this public broker
 server = "tls://test.mosquitto.org:8883"
-insecure = true
+tls-skip-verify = true
 
 [mosquitto-encrypted]
 # This establishes an encrypted session and verifies the connection
 # with a CA certificate downloaded from http://test.mosquitto.org
 server = "tls://test.mosquitto.org:8883"
-cafile = "examples/mosquitto.org.crt"
+tls-cacert = "examples/mosquitto.org.crt"
 
 [mosquitto-cert]
 # This one requires a cert http://test.mosquitto.org/ssl/
 # See http://test.mosquitto.org for details on this public broker
 server = "ssl://test.mosquitto.org:8884"
-cafile = "examples/mosquitto.org.crt"
-cert = "examples/client.crt"
-key = "examples/client.key"
+tls-cacert = "examples/mosquitto.org.crt"
+tls-cert = "examples/client.crt"
+tls-key = "examples/client.key"
 
 [hivemq]
 # This does not appear to publish much on $SYS/# so stats will not show anything

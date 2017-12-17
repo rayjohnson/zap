@@ -62,23 +62,21 @@ Here are the options related to connecting to an mqtt server.  These options are
 
 ```
   -b, --broker string          broker configuration
-      --cafile string          path to ca file used to certify your cert
-      --cert string            path to client.crt file used to connect to
-                               server
       --client-prefix string   prefix to use to generate a client id if
                                none is specified (default "zap_")
       --config string          config file (default is $HOME/.zap.toml)
   -h, --help                   help for stats
   -i, --id string              id to use for this client (default is
                                generated from client-prefix)
-      --insecure               skips verification for SSL connections
   -k, --keepalive int          the number of seconds after which a PING
                                is sent to the broker (default 60)
-      --key string             path to client.key file used to connect to
-                               server
       --password string        password for accessing MQTT
-      --server string          location of MQTT server (default
+      --server string          Url of MQTT server (default
                                "tcp://127.0.0.1:1883")
+      --tls-cacert string      Trust certs signed only by this CA
+      --tls-cert string        Path to TLS certificate file
+      --tls-key string         Path to TLS key file
+      --tls-skip-verify        Skips verification for TLS
       --username string        username for accessing MQTT
       --verbose                give more verbose information
 ```
