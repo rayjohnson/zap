@@ -27,23 +27,39 @@ import (
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
+	"github.com/docker/docker/pkg/term"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+const usageTemplate = `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{ wrappedFlagUsages . | trimRightSpace}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
+
 var optVerbose bool
 var cfgFile string
-
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "zap",
-	Short: "Listen or publish to a MQTT broker",
-	Long: `zap - what happens when technology meets mosquito
-
-zap is a little utility for publishing or subscribing to events for the
-MQTT message bus`,
-}
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -51,14 +67,26 @@ func Execute(ver string, rev string) {
 	version = ver
 	revision = rev
 
+	rootCmd := setupRootCommand()
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func init() {
-	// TODO: maybe get rid of init and do this more explicitly
+func setupRootCommand() *cobra.Command {
+	// rootCmd represents the base command when called without any subcommands
+	var rootCmd = &cobra.Command{
+		Use:   "zap",
+		Short: "Listen or publish to a MQTT broker",
+		Long: `zap - what happens when technology meets mosquito
+
+	zap is a little utility for publishing or subscribing to events for the
+	MQTT message bus`,
+	}
+
 	cobra.OnInitialize(initConfig)
+	cobra.AddTemplateFunc("wrappedFlagUsages", wrappedFlagUsages)
 
 	rootCmd.AddCommand(
 		newSubscribeCommand(),
@@ -66,6 +94,9 @@ func init() {
 		newPublishCommand(),
 		newStatsCommand(),
 	)
+	rootCmd.SetUsageTemplate(usageTemplate)
+
+	return rootCmd
 }
 
 // initConfig reads in config file if set.
@@ -103,4 +134,12 @@ func initConfig() {
 	//        "DEBUG: ",
 	//        log.Ldate|log.Ltime|log.Lshortfile)
 
+}
+
+func wrappedFlagUsages(cmd *cobra.Command) string {
+	width := 80
+	if ws, err := term.GetWinsize(0); err == nil {
+		width = int(ws.Width)
+	}
+	return cmd.Flags().FlagUsagesWrapped(width - 1)
 }
