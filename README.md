@@ -2,8 +2,6 @@
 
 A command-line utility for working with MQTT
 
-This project is very much in progress.  Check back soon.
-
 Zap can be used to publish to or subscribe from an mqtt message broker.  It was modeled after the command-line tools [mosquitto_pub](https://mosquitto.org/man/mosquitto_pub-1.html) and [mosquitto_sub](https://mosquitto.org/man/mosquitto_sub-1.html).  In addition, Zap supports a configuration file that makes it easier to work with multiple mqtt brokers.  It also has a stats command that provides a real-time dashboard to the metrics published on the $SYS/# topics.
 
 ## Installation
@@ -65,18 +63,24 @@ Here are the options related to connecting to an mqtt server.  These options are
 ```
   -b, --broker string          broker configuration
       --cafile string          path to ca file used to certify your cert
-      --cert string            path to client.crt file used to connect to server
-      --client-prefix string   prefix to use to generate a client id if none is specified (default "zap_")
+      --cert string            path to client.crt file used to connect to
+                               server
+      --client-prefix string   prefix to use to generate a client id if
+                               none is specified (default "zap_")
       --config string          config file (default is $HOME/.zap.toml)
-  -i, --id string              id to use for this client (default is generated from client-prefix)
+  -h, --help                   help for stats
+  -i, --id string              id to use for this client (default is
+                               generated from client-prefix)
       --insecure               skips verification for SSL connections
-  -k, --keepalive int          the number of seconds after which a PING is sent to the broker (default 60)
-      --key string             path to client.key file used to connect to server
+  -k, --keepalive int          the number of seconds after which a PING
+                               is sent to the broker (default 60)
+      --key string             path to client.key file used to connect to
+                               server
       --password string        password for accessing MQTT
-      --qos int                qos setting
-      --server string          location of MQTT server (default "tcp://127.0.0.1:1883")
-      --topic string           mqtt topic (default "#")
+      --server string          location of MQTT server (default
+                               "tcp://127.0.0.1:1883")
       --username string        username for accessing MQTT
+      --verbose                give more verbose information
 ```
 
 Most of these can also be specified in the config file.  By putting the connection information in your config under different sections it can save a lot of typing on the command line!  In the examples directory
@@ -129,7 +133,7 @@ Message: iot-2/type/niagara/id/456/evt/event8531/fmt/txt
 
 You can change how the output looks by using the **--template** flag.  Zap uses the [Go lang template](https://golang.org/pkg/text/template/) language to specify how the output looks.  The default is ```Received message on topic: {{.Topic}}\nMessage: {{.Message}}\n")``` which generates the output above.
 
-So, for exmaple, if you wanted to generate a CSV file of -- topic, message -- you could specify a template like this:
+So, for example, if you wanted to generate a CSV file of -- topic, message -- you could specify a template like this:
 ```"{{.Topic}},{{.Message}}\n"```
 
 Note: It can be a pain to specify the \n on the command line.  You just have to hit enter and make it a multi-line command.
@@ -209,8 +213,10 @@ $ make help
 setup           Creates vendor directory with all dependencies
 build           Build the source
 install         Builds and installs zap into your go/bin
+release         Do cross platform build and package
 clean           Clean up any generated files
 lint            Run golint and go fmt on source base
+test            Run test suite (go test)
 dep_graph       Generate a dependency graph from dep and graphvis
 help            Display this help message
 todo            Greps for any TODO comments in the source code
@@ -223,4 +229,4 @@ $ make setup
 $ make build
 ```
 
-NOTE: I still need to build support for cross compilation and releases
+The command ```make release``` will generate packaged binaries for Windows, Linux and Mac.
