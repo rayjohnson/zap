@@ -54,8 +54,9 @@ Use the --directory option to specify the location for any generated files`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runVersion(cmd, verOpts)
 		},
+		SilenceUsage:      true,
+		DisableAutoGenTag: true,
 	}
-	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
 	flags.BoolVar(&verOpts.genAutoComplete, "generate-auto-complete", false, "Generates a bash auto-complete script zap.sh")

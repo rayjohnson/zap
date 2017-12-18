@@ -48,8 +48,9 @@ the same information and you need to have permission to view those topics.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runStats(cmd.Flags(), zapOpts)
 		},
+		SilenceUsage:      true,
+		DisableAutoGenTag: true,
 	}
-	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
 	zapOpts = buildZapFlags(flags)

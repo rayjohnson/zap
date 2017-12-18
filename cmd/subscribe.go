@@ -70,14 +70,15 @@ func newSubscribeCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "subscribe",
 		Args:  cobra.NoArgs,
-		Short: "Listen to an MQTT server on a topic",
-		Long:  `Subscribe to a topic on the MQTT server`,
-		// TODO: put in long description for subscribe
+		Short: "Subscribe to an MQTT server on a topic",
+		Long: `Subscribe to a topic on the MQTT server and print the contents
+to stdout.  Use the --format flag to adjust the output.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSubscribe(cmd.Flags(), zapOpts)
 		},
+		SilenceUsage:      true,
+		DisableAutoGenTag: true,
 	}
-	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
 	flags.BoolVar(&subOpts.cleanSession, "clean-session", true, "Set to false and mqtt will send queued up messages if service disconnects and restarts")

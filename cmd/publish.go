@@ -52,15 +52,20 @@ func newPublishCommand() *cobra.Command {
 		Use:   "publish",
 		Args:  cobra.NoArgs,
 		Short: "Publish into MQTT",
-		Long: `The publish command allows you to send data on an MQTT topic
+		Long: `The publish command allows you to send a message on an MQTT topic
 
 Multiple options are available to send a single argument, a whole file, or
 data coming from stdin.`,
+		Example: `Publish to public mqtt server a test:
+	* zap publish --server tcp://test.mosquitto.org:1883 --topic sample/hello -m hello
+Publish to the broker in config named mosquitto data from a file:
+	* zap publish --config examples/example.zap.toml -b mosquitto --file examples/README.txt`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPublish(cmd.Flags(), zapOpts)
 		},
+		SilenceUsage:      true,
+		DisableAutoGenTag: true,
 	}
-	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
 	flags.BoolVarP(&pubOpts.doStdinLine, "stdin-line", "l", false, "Send each line of stdin as separate message until Ctrl-C")

@@ -49,7 +49,7 @@ func buildZapFlags(fs *pflag.FlagSet) *zapOptions {
 
 	fs.StringVar(&zapOpts.configFile, "config", "", "Config file path (default is $HOME/.zap.toml)")
 	fs.BoolVar(&zapOpts.verbose, "verbose", false, "Give more verbose information")
-	fs.StringVarP(&zapOpts.broker, "broker", "b", "", "Broker configuration")
+	fs.StringVarP(&zapOpts.broker, "broker", "b", "", "Specifies a section of the config file to use")
 
 	return zapOpts
 }
@@ -151,13 +151,14 @@ func (zapOpts *zapOptions) processOptions(fs *pflag.FlagSet) error {
 
 			// subscribe and publish share the same --topic flag but have different defaults
 			// so in the config file this requires you to specify subscribe-topic as the value for --topic
-			subOpts.topic = getValueFromConfig(fs, zapOpts.configTree, "subscribe-topic", subOpts.topic).(string)
+			// TODO - need to figure out how to get topic to be different in config
+			subOpts.topic = getValueFromConfig(fs, zapOpts.configTree, "topic", subOpts.topic).(string)
 		}
 		if zapOpts.pubOpts != nil {
 			pubOpts := zapOpts.pubOpts
 			// Flags like --message, etc. I do not think make sense to specify in config file - skip them
 			pubOpts.qos = getValueFromConfig(fs, zapOpts.configTree, "qos", pubOpts.qos).(int)
-			pubOpts.topic = getValueFromConfig(fs, zapOpts.configTree, "publish-topic", pubOpts.topic).(string)
+			pubOpts.topic = getValueFromConfig(fs, zapOpts.configTree, "topic", pubOpts.topic).(string)
 		}
 	}
 
