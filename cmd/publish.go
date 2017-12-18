@@ -45,8 +45,8 @@ type publishOptions struct {
 }
 
 func newPublishCommand() *cobra.Command {
-	var conOpts *connectionOptions
-	pubOpts := publishOptions{}
+	var zapOpts *zapOptions
+	pubOpts := &publishOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "publish",
@@ -57,27 +57,29 @@ func newPublishCommand() *cobra.Command {
 Multiple options are available to send a single argument, a whole file, or
 data coming from stdin.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPublish(cmd.Flags(), conOpts, pubOpts)
+			return runPublish(cmd.Flags(), zapOpts)
 		},
 	}
 	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
-	flags.BoolVarP(&pubOpts.doStdinLine, "stdin-line", "l", false, "send stdin data as message with each newline is a new message")
-	flags.BoolVarP(&pubOpts.doStdinFile, "stdin-file", "s", false, "read stdin until EOF and send all as one message")
-	flags.StringVarP(&pubOpts.message, "message", "m", "", "send the argument to the topic and exit")
-	flags.StringVarP(&pubOpts.filePath, "file", "f", "", "send contents of the file to the topic and exit")
-	flags.BoolVarP(&pubOpts.retain, "retain", "r", false, "retain as the last good message")
-	flags.BoolVarP(&pubOpts.doNullMsg, "null-message", "n", false, "send a null (zero length) message")
-	flags.StringVar(&pubOpts.topic, "topic", "sample", "mqtt topic to post to")
-	flags.IntVar(&pubOpts.qos, "qos", 0, "qos setting for outbound messages")
+	flags.BoolVarP(&pubOpts.doStdinLine, "stdin-line", "l", false, "Send each line of stdin as separate message until Ctrl-C")
+	flags.BoolVarP(&pubOpts.doStdinFile, "stdin-file", "s", false, "Read stdin until EOF and send all as one message")
+	flags.StringVarP(&pubOpts.message, "message", "m", "", "Send the argument to the topic and exit")
+	flags.StringVarP(&pubOpts.filePath, "file", "f", "", "Send contents of the file to the topic and exit")
+	flags.BoolVarP(&pubOpts.retain, "retain", "r", false, "Retain as the last good message")
+	flags.BoolVarP(&pubOpts.doNullMsg, "null-message", "n", false, "Send a null (zero length) message")
+	flags.StringVar(&pubOpts.topic, "topic", "sample", "Topic string for mqtt, should not use wild cards")
+	flags.IntVar(&pubOpts.qos, "qos", 0, "The qos setting for outbound messages")
 
-	conOpts = addConnectionFlags(flags)
+	zapOpts = buildZapFlags(flags)
+	zapOpts.conOpts = addConnectionFlags(flags)
+	zapOpts.pubOpts = pubOpts
 
 	return cmd
 }
 
-func validatePublishOptions(pubOpts publishOptions) error {
+func (pubOpts *publishOptions) validateOptions() error {
 	var count = 0
 
 	if pubOpts.message != "" {
@@ -115,19 +117,13 @@ func validatePublishOptions(pubOpts publishOptions) error {
 	return nil
 }
 
-func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions, pubOpts publishOptions) error {
-	clientOpts, err := ParseBrokerInfo(flags, conOpts)
-	if err != nil {
+func runPublish(flags *pflag.FlagSet, zapOpts *zapOptions) error {
+	pubOpts := zapOpts.pubOpts
+
+	if err := zapOpts.processOptions(flags); err != nil {
 		return err
 	}
-	clientOpts.CleanSession = true
-
-	err = validatePublishOptions(pubOpts)
-	if err != nil {
-		return err
-	}
-
-	PrintConnectionInfo(conOpts, nil, &pubOpts)
+	clientOpts := zapOpts.clientOpts
 
 	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -135,7 +131,7 @@ func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions, pubOpts publis
 	}
 	defer client.Disconnect(250)
 
-	if optVerbose {
+	if zapOpts.verbose {
 		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
 	}
 
@@ -180,7 +176,7 @@ func runPublish(flags *pflag.FlagSet, conOpts *connectionOptions, pubOpts publis
 		client.Publish(pubOpts.topic, byte(pubOpts.qos), pubOpts.retain, data)
 	}
 
-	if optVerbose {
+	if zapOpts.verbose {
 		fmt.Printf("message sent\n")
 	}
 

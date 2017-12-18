@@ -33,7 +33,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 const builtinTemplate = "Received message on topic: {{.Topic}}\nMessage: {{.Message}}\n"
@@ -53,6 +52,7 @@ type subscribeOptions struct {
 	count          int
 	skipRetained   bool
 	qos            int
+	stdoutTemplate *template.Template
 }
 
 type messageOptions struct {
@@ -64,8 +64,8 @@ type messageOptions struct {
 }
 
 func newSubscribeCommand() *cobra.Command {
-	var conOpts *connectionOptions
-	subOpts := subscribeOptions{}
+	var zapOpts *zapOptions
+	subOpts := &subscribeOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "subscribe",
@@ -74,45 +74,49 @@ func newSubscribeCommand() *cobra.Command {
 		Long:  `Subscribe to a topic on the MQTT server`,
 		// TODO: put in long description for subscribe
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSubscribe(cmd.Flags(), conOpts, subOpts)
+			return runSubscribe(cmd.Flags(), zapOpts)
 		},
 	}
 	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
-	flags.BoolVar(&subOpts.cleanSession, "clean-session", true, "set to false and mqtt will send queued up messages if service disconnects and restarts")
-	flags.StringVar(&subOpts.templateString, "template", builtinTemplate, "template to use for output to stdout")
-	flags.StringVar(&subOpts.topic, "topic", "#", "mqtt topic to listen to")
-	flags.IntVar(&subOpts.count, "count", -1, "after count of messages disconnect and exit")
-	flags.BoolVar(&subOpts.skipRetained, "skip-retained", false, "skip printing messages marked as retained from mqtt")
-	flags.IntVar(&subOpts.qos, "qos", 0, "qos setting for inbound messages")
-
+	flags.BoolVar(&subOpts.cleanSession, "clean-session", true, "Set to false and mqtt will send queued up messages if service disconnects and restarts")
+	flags.StringVar(&subOpts.templateString, "template", builtinTemplate, "Template to use for output to stdout")
+	flags.StringVar(&subOpts.topic, "topic", "#", "The mqtt topic or topic filter to listen to")
+	flags.IntVar(&subOpts.count, "count", -1, "After count of messages disconnect and exit")
+	flags.BoolVar(&subOpts.skipRetained, "skip-retained", false, "Skip printing messages marked as retained from mqtt")
+	flags.IntVar(&subOpts.qos, "qos", 0, "The qos setting for inbound messages")
 	// TODO: -T, --filter-out. - use regexp for this maybe?  (this is for the topic but what about the message?)
 
-	conOpts = addConnectionFlags(flags)
+	zapOpts = buildZapFlags(flags)
+	zapOpts.conOpts = addConnectionFlags(flags)
+	zapOpts.subOpts = subOpts
 
 	return cmd
 }
 
-func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions, subOpts subscribeOptions) error {
-	clientOpts, err := ParseBrokerInfo(flags, conOpts)
-	if err != nil {
-		return err
-	}
-	if subOpts.cleanSession {
-		clientOpts.CleanSession = subOpts.cleanSession
-	}
+func (subOpts *subscribeOptions) validateOptions() error {
+	var err error
 
 	if subOpts.qos < 0 || subOpts.qos > 2 {
 		return fmt.Errorf("--qos value must or 0, 1 or 2")
 	}
 
-	stdoutTemplate, err := getTemplate(flags, conOpts, subOpts)
+	subOpts.stdoutTemplate, err = template.New("stdout").Parse(subOpts.templateString)
 	if err != nil {
 		return err
 	}
 
-	PrintConnectionInfo(conOpts, &subOpts, nil)
+	return nil
+}
+
+func runSubscribe(flags *pflag.FlagSet, zapOpts *zapOptions) error {
+	subOpts := zapOpts.subOpts
+
+	if err := zapOpts.processOptions(flags); err != nil {
+		return err
+	}
+	clientOpts := zapOpts.clientOpts
 
 	quit := make(chan bool)
 	c := make(chan os.Signal, 1)
@@ -129,7 +133,7 @@ func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions, subOpts subs
 	}
 	defer client.Disconnect(250)
 
-	if optVerbose {
+	if zapOpts.verbose {
 		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
 	}
 
@@ -137,7 +141,7 @@ func runSubscribe(flags *pflag.FlagSet, conOpts *connectionOptions, subOpts subs
 	msgOpts.quit = quit
 	msgOpts.count = subOpts.count
 	msgOpts.skipRetained = subOpts.skipRetained
-	msgOpts.stdoutTemplate = stdoutTemplate
+	msgOpts.stdoutTemplate = subOpts.stdoutTemplate
 
 	if token := client.Subscribe(subOpts.topic, byte(subOpts.qos), func(client MQTT.Client, msg MQTT.Message) {
 		subscriptionHandler(client, msg, &msgOpts)
@@ -191,14 +195,4 @@ func subscriptionHandler(client MQTT.Client, msg MQTT.Message, msgOpts *messageO
 	if doExit {
 		msgOpts.quit <- true
 	}
-}
-
-func getTemplate(flags *pflag.FlagSet, conOpts *connectionOptions, subOpts subscribeOptions) (*template.Template, error) {
-	if !flags.Lookup("template").Changed {
-		if key := getCorrectConfigKey(conOpts.broker, "template"); key != "" {
-			subOpts.templateString = viper.GetString(key)
-		}
-	}
-
-	return template.New("stdout").Parse(subOpts.templateString)
 }

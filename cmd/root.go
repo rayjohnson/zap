@@ -21,16 +21,13 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/docker/docker/pkg/term"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const usageTemplate = `Usage:{{if .Runnable}}
@@ -58,7 +55,6 @@ Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
-var optVerbose bool
 var cfgFile string
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -85,7 +81,6 @@ func setupRootCommand() *cobra.Command {
 	MQTT message bus`,
 	}
 
-	cobra.OnInitialize(initConfig)
 	cobra.AddTemplateFunc("wrappedFlagUsages", wrappedFlagUsages)
 
 	rootCmd.AddCommand(
@@ -95,30 +90,6 @@ func setupRootCommand() *cobra.Command {
 		newStatsCommand(),
 	)
 	rootCmd.SetUsageTemplate(usageTemplate)
-
-	return rootCmd
-}
-
-// initConfig reads in config file if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".zap" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".zap")
-	}
-
-	// If a config file is found, read it in.
-	viper.ReadInConfig()
 
 	// Uncomment these to turn on debugging from within the mqtt library.
 	MQTT.ERROR = log.New(os.Stdout,
@@ -134,6 +105,7 @@ func initConfig() {
 	//        "DEBUG: ",
 	//        log.Ldate|log.Ltime|log.Lshortfile)
 
+	return rootCmd
 }
 
 func wrappedFlagUsages(cmd *cobra.Command) string {

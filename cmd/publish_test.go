@@ -15,27 +15,27 @@ func TestValidatePublishOptions(t *testing.T) {
 		filePath:    "bad/path",
 	}
 
-	err := validatePublishOptions(pubOpts)
+	err := pubOpts.validateOptions()
 	assert.Equal(t, "stat bad/path: no such file or directory", err.Error(), "error message not right")
 
 	// The test runs in the cmd dir so the path below exists
 	pubOpts.filePath = "publish_test.go"
-	err = validatePublishOptions(pubOpts)
+	err = pubOpts.validateOptions()
 	assert.Equal(t, "only one of --message, --file, --stdin-line, --stdin-file, or --null-message can be used", err.Error(), "error message not right")
 
 	pubOpts = publishOptions{}
-	err = validatePublishOptions(pubOpts)
+	err = pubOpts.validateOptions()
 	assert.Equal(t, "must specify one of --message, --file, --stdin-line, --stdin-file, or --null-message to send any data", err.Error(), "error message not right")
 
 	pubOpts = publishOptions{
 		doNullMsg: true,
 		qos:       7,
 	}
-	err = validatePublishOptions(pubOpts)
+	err = pubOpts.validateOptions()
 	assert.Equal(t, "--qos value must or 0, 1 or 2", err.Error(), "error message not right")
 
 	pubOpts.qos = 2
-	err = validatePublishOptions(pubOpts)
+	err = pubOpts.validateOptions()
 	assert.Nil(t, err)
 }
 

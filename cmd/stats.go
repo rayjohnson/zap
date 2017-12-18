@@ -34,7 +34,7 @@ const statsTopic = "$SYS/#"
 const statsQos = 0
 
 func newStatsCommand() *cobra.Command {
-	var conOpts *connectionOptions
+	var zapOpts *zapOptions
 
 	cmd := &cobra.Command{
 		Use:   "stats",
@@ -46,25 +46,26 @@ The stats command subscribes to the brokers $SYS/# topics to get and
 display statistics for how the broker is running.  Not all brokers show
 the same information and you need to have permission to view those topics.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStats(cmd.Flags(), conOpts)
+			return runStats(cmd.Flags(), zapOpts)
 		},
 	}
 	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
-	conOpts = addConnectionFlags(flags)
+	zapOpts = buildZapFlags(flags)
+	zapOpts.conOpts = addConnectionFlags(flags)
 
 	return cmd
 }
 
-func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) error {
-	clientOpts, err := ParseBrokerInfo(flags, conOpts)
-	if err != nil {
+func runStats(flags *pflag.FlagSet, zapOpts *zapOptions) error {
+	if err := zapOpts.processOptions(flags); err != nil {
 		return err
 	}
-	clientOpts.CleanSession = true
+	clientOpts := zapOpts.clientOpts
 
-	PrintConnectionInfo(conOpts, nil, nil)
+	// TODO: do I need to do this?  So what if it isn't clean?  I'll get data
+	clientOpts.CleanSession = true
 
 	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -72,7 +73,7 @@ func runStats(flags *pflag.FlagSet, conOpts *connectionOptions) error {
 	}
 	defer client.Disconnect(250)
 
-	if optVerbose {
+	if zapOpts.verbose {
 		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
 	}
 

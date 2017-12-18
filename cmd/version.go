@@ -58,9 +58,9 @@ Use the --directory option to specify the location for any generated files`,
 	cmd.SilenceUsage = true
 
 	flags := cmd.Flags()
-	flags.BoolVar(&verOpts.genAutoComplete, "generate-auto-complete", false, "generates a bash autocomplete script zap.sh")
-	flags.BoolVar(&verOpts.genManPages, "generate-man-pages", false, "generates the man pages for zap")
-	flags.StringVar(&verOpts.installDir, "directory", ".", "directory to install generated files")
+	flags.BoolVar(&verOpts.genAutoComplete, "generate-auto-complete", false, "Generates a bash auto-complete script zap.sh")
+	flags.BoolVar(&verOpts.genManPages, "generate-man-pages", false, "Generates the man pages for zap")
+	flags.StringVar(&verOpts.installDir, "directory", ".", "Directory to install generated files")
 
 	return cmd
 }
