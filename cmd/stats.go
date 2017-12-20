@@ -51,6 +51,9 @@ the same information and you need to have permission to view those topics.`,
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
 	}
+	annotations := make(map[string]string)
+	annotations["man-files-section"] = filesManInfo
+	cmd.Annotations = annotations
 
 	flags := cmd.Flags()
 	zapOpts = buildZapFlags(flags)

@@ -79,6 +79,9 @@ to stdout.  Use the --format flag to adjust the output.`,
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
 	}
+	annotations := make(map[string]string)
+	annotations["man-files-section"] = filesManInfo
+	cmd.Annotations = annotations
 
 	flags := cmd.Flags()
 	flags.BoolVar(&subOpts.cleanSession, "clean-session", true, "Set to false and mqtt will send queued up messages if service disconnects and restarts")

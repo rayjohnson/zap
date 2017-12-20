@@ -52,6 +52,14 @@ Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
+const filesManInfo = `Many of the options for this command can be put in a config file.
+You can create a config file at $HOME/.zap.toml.  Configs found in the config file will override built-in
+defaults but can be overridden by explict command-line options.
+
+The format of the config file is written in Toml.  Sections in brackets (e.g. [broker]) can be
+referenced with the --broker flag.  Values should be of the form qos = "1" and the keys will
+have the same name as the option values listed above.`
+
 var cfgFile string
 
 // Execute adds all child commands to the root command and sets flags appropriately.

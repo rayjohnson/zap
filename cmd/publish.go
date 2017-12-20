@@ -66,6 +66,9 @@ Publish to the broker in config named mosquitto data from a file:
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
 	}
+	annotations := make(map[string]string)
+	annotations["man-files-section"] = filesManInfo
+	cmd.Annotations = annotations
 
 	flags := cmd.Flags()
 	flags.BoolVarP(&pubOpts.doStdinLine, "stdin-line", "l", false, "Send each line of stdin as separate message until Ctrl-C")

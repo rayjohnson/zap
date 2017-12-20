@@ -25,8 +25,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rayjohnson/cobra-man/man"
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
 )
 
 var version string
@@ -87,11 +87,13 @@ func runVersion(cmd *cobra.Command, verOpts versionOptions) error {
 	}
 
 	if verOpts.genManPages {
-		header := &doc.GenManHeader{
-			Title:   "ZAP",
-			Section: "1",
+		manOpts := &man.GenerateManOptions{
+			ProgramName: "Zap " + version,
+			Author:      "Ray Johnson <ray.johnson+zap@gmail.com>",
+			Directory:   verOpts.installDir,
+			Bugs:        `Bugs related to zap can be filed at https://github.com/rjohnson/zap`,
 		}
-		err := doc.GenManTree(cmd.Root(), header, verOpts.installDir)
+		err := man.GenerateManPages(cmd.Root(), manOpts)
 		if err != nil {
 			return err
 		}
