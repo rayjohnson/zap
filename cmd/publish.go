@@ -56,10 +56,18 @@ func newPublishCommand() *cobra.Command {
 
 Multiple options are available to send a single argument, a whole file, or
 data coming from stdin.`,
-		Example: `Publish to public mqtt server a test:
-	* zap publish --server tcp://test.mosquitto.org:1883 --topic sample/hello -m hello
+		Example: `.nf
+Publish to public mqtt server a test:
+.RS
+zap publish \-\-server tcp://test.mosquitto.org:1883
+\-\-topic sample/hello \-m hello
+.RE
 Publish to the broker in config named mosquitto data from a file:
-	* zap publish --config examples/example.zap.toml -b mosquitto --file examples/README.txt`,
+.RS
+zap publish \-\-config examples/example.zap.toml \-b mosquitto
+\-\-file examples/README.txt
+.RE
+.fi`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPublish(cmd.Flags(), zapOpts)
 		},

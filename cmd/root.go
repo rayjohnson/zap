@@ -82,8 +82,8 @@ func setupRootCommand() *cobra.Command {
 		Short: "Listen or publish to a MQTT broker",
 		Long: `zap - what happens when technology meets mosquito
 
-	zap is a little utility for publishing or subscribing to events for the
-	MQTT message bus`,
+zap is a little utility for publishing or subscribing to events for the
+MQTT message bus`,
 	}
 
 	cobra.AddTemplateFunc("wrappedFlagUsages", wrappedFlagUsages)

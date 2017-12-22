@@ -88,10 +88,11 @@ func runVersion(cmd *cobra.Command, verOpts versionOptions) error {
 
 	if verOpts.genManPages {
 		manOpts := &man.GenerateManOptions{
-			ProgramName: "Zap " + version,
-			Author:      "Ray Johnson <ray.johnson+zap@gmail.com>",
-			Directory:   verOpts.installDir,
-			Bugs:        `Bugs related to zap can be filed at https://github.com/rjohnson/zap`,
+			LeftFooter:   "Zap " + version,
+			CenterHeader: "Zap Manual",
+			Author:       "Ray Johnson <ray.johnson+zap@gmail.com>",
+			Directory:    verOpts.installDir,
+			Bugs:         `Bugs related to zap can be filed at https://github.com/rjohnson/zap`,
 		}
 		err := man.GenerateManPages(cmd.Root(), manOpts)
 		if err != nil {
