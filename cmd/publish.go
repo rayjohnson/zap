@@ -76,6 +76,7 @@ zap publish \-\-config examples/example.zap.toml \-b mosquitto
 	}
 	annotations := make(map[string]string)
 	annotations["man-files-section"] = filesManInfo
+	annotations["man-no-args"] = "no args"
 	cmd.Annotations = annotations
 
 	flags := cmd.Flags()
@@ -87,6 +88,16 @@ zap publish \-\-config examples/example.zap.toml \-b mosquitto
 	flags.BoolVarP(&pubOpts.doNullMsg, "null-message", "n", false, "Send a null (zero length) message")
 	flags.StringVar(&pubOpts.topic, "topic", "sample", "Topic string for mqtt, should not use wild cards")
 	flags.IntVar(&pubOpts.qos, "qos", 0, "The qos setting for outbound messages")
+
+	// Flag annotations to help make docs more clear
+	annotation := []string{"path"}
+	flags.SetAnnotation("file", "man-arg-hints", annotation)
+	annotation = []string{"data"}
+	flags.SetAnnotation("message", "man-arg-hints", annotation)
+	annotation = []string{"topic path"}
+	flags.SetAnnotation("topic", "man-arg-hints", annotation)
+	annotation = []string{"0|1|2"}
+	flags.SetAnnotation("qos", "man-arg-hints", annotation)
 
 	zapOpts = buildZapFlags(flags)
 	zapOpts.conOpts = addConnectionFlags(flags)

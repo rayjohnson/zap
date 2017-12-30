@@ -53,6 +53,7 @@ the same information and you need to have permission to view those topics.`,
 	}
 	annotations := make(map[string]string)
 	annotations["man-files-section"] = filesManInfo
+	annotations["man-no-args"] = "no args"
 	cmd.Annotations = annotations
 
 	flags := cmd.Flags()

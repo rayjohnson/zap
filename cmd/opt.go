@@ -51,6 +51,11 @@ func buildZapFlags(fs *pflag.FlagSet) *zapOptions {
 	fs.BoolVar(&zapOpts.verbose, "verbose", false, "Give more verbose information")
 	fs.StringVarP(&zapOpts.broker, "broker", "b", "", "Specifies a section of the config file to use")
 
+	annotation := []string{"path"}
+	fs.SetAnnotation("config", "man-arg-hints", annotation)
+	annotation = []string{"broker name"}
+	fs.SetAnnotation("broker", "man-arg-hints", annotation)
+
 	return zapOpts
 }
 
@@ -68,6 +73,21 @@ func addConnectionFlags(fs *pflag.FlagSet) *connectionOptions {
 	fs.StringVar(&conOpts.certFile, "tls-cert", "", "Path to TLS certificate file")
 	fs.StringVar(&conOpts.keyFile, "tls-key", "", "Path to TLS key file")
 	fs.BoolVar(&conOpts.insecure, "tls-skip-verify", false, "Skips verification for TLS")
+
+	annotation := []string{"url"}
+	fs.SetAnnotation("server", "man-arg-hints", annotation)
+	annotation = []string{"user name"}
+	fs.SetAnnotation("username", "man-arg-hints", annotation)
+	annotation = []string{"password"}
+	fs.SetAnnotation("password", "man-arg-hints", annotation)
+	annotation = []string{"client id"}
+	fs.SetAnnotation("id", "man-arg-hints", annotation)
+	annotation = []string{"path"}
+	fs.SetAnnotation("tls-cert", "man-arg-hints", annotation)
+	annotation = []string{"path"}
+	fs.SetAnnotation("tls-key", "man-arg-hints", annotation)
+	annotation = []string{"path"}
+	fs.SetAnnotation("tls-cacert", "man-arg-hints", annotation)
 
 	return conOpts
 }
