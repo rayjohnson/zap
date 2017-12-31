@@ -79,6 +79,7 @@ func setupRootCommand() *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	var rootCmd = &cobra.Command{
 		Use:   "zap",
+		Args:  cobra.NoArgs,
 		Short: "Listen or publish to a MQTT broker",
 		Long: `zap - what happens when technology meets mosquito
 

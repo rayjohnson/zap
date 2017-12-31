@@ -58,10 +58,6 @@ Use the --directory option to specify the location for any generated files`,
 		DisableAutoGenTag: true,
 	}
 
-	annotations := make(map[string]string)
-	annotations["man-no-args"] = "no args"
-	cmd.Annotations = annotations
-
 	flags := cmd.Flags()
 	flags.BoolVar(&verOpts.genAutoComplete, "generate-auto-complete", false, "Generates a bash auto-complete script zap.sh")
 	flags.BoolVar(&verOpts.genManPages, "generate-man-pages", false, "Generates the man pages for zap")

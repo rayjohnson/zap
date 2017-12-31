@@ -84,7 +84,6 @@ to stdout.  Use the --format flag to adjust the output.`,
 	}
 	annotations := make(map[string]string)
 	annotations["man-files-section"] = filesManInfo
-	annotations["man-no-args"] = "no args"
 	cmd.Annotations = annotations
 
 	flags := cmd.Flags()

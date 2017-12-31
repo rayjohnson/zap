@@ -76,7 +76,6 @@ zap publish \-\-config examples/example.zap.toml \-b mosquitto
 	}
 	annotations := make(map[string]string)
 	annotations["man-files-section"] = filesManInfo
-	annotations["man-no-args"] = "no args"
 	cmd.Annotations = annotations
 
 	flags := cmd.Flags()
