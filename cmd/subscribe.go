@@ -32,6 +32,7 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/rayjohnson/zap/output"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
