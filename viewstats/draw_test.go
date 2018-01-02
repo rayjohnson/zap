@@ -1,6 +1,7 @@
 package viewstats
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -34,4 +35,38 @@ func TestFixedLenNum(t *testing.T) {
 			t.Errorf("parseload: expected \"%s\", actual \"%s\"", expected, str)
 		}
 	}
+}
+
+func TestDrawLoadTitle(t *testing.T) {
+	var output string
+	var f termWriter
+
+	f = func(x, y int, str string) { output = str }
+
+	drawLoadTitle(f, 0, 0, 25)
+	assert.Equal(t, "Load                       1 min  5 min 15 min", output, "error message not right")
+	drawLoadTitle(f, 0, 0, 5)
+	assert.Equal(t, "Load   1 min  5 min 15 min", output, "error message not right")
+}
+
+func TestDrawUptime(t *testing.T) {
+	var output string
+	var f termWriter
+
+	f = func(x, y int, str string) { output = str }
+
+	drawUptime(f, 0, 0, 10, "Broker Uptime", "10 seconds")
+	assert.Equal(t, "Broker Uptime : 10s", output, "error message not right")
+
+	drawUptime(f, 0, 0, 10, "Broker Uptime", "100 seconds")
+	assert.Equal(t, "Broker Uptime : 1m40s", output, "error message not right")
+
+	drawUptime(f, 0, 0, 10, "Broker Uptime", "1000 seconds")
+	assert.Equal(t, "Broker Uptime : 16m40s", output, "error message not right")
+
+	drawUptime(f, 0, 0, 10, "Broker Uptime", "10000 seconds")
+	assert.Equal(t, "Broker Uptime : 2h46m40s", output, "error message not right")
+
+	drawUptime(f, 0, 0, 10, "Broker Uptime", "100000 seconds")
+	assert.Equal(t, "Broker Uptime : 27h46m40s", output, "error message not right")
 }

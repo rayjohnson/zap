@@ -30,8 +30,16 @@ import (
 const coldef = termbox.ColorDefault
 const datePrint = "Jan 02, 2006 15:04:05"
 
+// ConnectHandler is used in a channel to tell us if
+// out connection to MQTT has disconnected or reconnected
+type ConnectHandler struct {
+	IsConnected bool
+	Err         error
+}
+
 type dataHash map[string]string
 
+var conData ConnectHandler
 var mqInbound = make(chan [2]string, 16)
 
 func (d dataHash) get(key string) (result string) {
@@ -58,7 +66,7 @@ func PrepViewer() {
 
 // StartStatsDisplay sets up the terminal UI to display
 // data.  It will run in an infinite loop until Ctrl-C is hit
-func StartStatsDisplay() {
+func StartStatsDisplay(connectionChan chan ConnectHandler) {
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
@@ -90,6 +98,11 @@ loop:
 			redrawAll()
 		case inMsg := <-mqInbound:
 			mqttData[inMsg[0]] = inMsg[1]
+		case connHandler := <-connectionChan:
+			conData = connHandler
+			if conData.IsConnected {
+				startTime = time.Now()
+			}
 		}
 	}
 

@@ -28,6 +28,7 @@ import (
 	"os"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/rayjohnson/zap/output"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -157,9 +158,7 @@ func runPublish(flags *pflag.FlagSet, zapOpts *zapOptions) error {
 	}
 	defer client.Disconnect(250)
 
-	if zapOpts.verbose {
-		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
-	}
+	output.VERBOSE.Printf("Connected to %s\n", clientOpts.Servers[0])
 
 	if pubOpts.message != "" {
 		// send a single message
@@ -202,9 +201,7 @@ func runPublish(flags *pflag.FlagSet, zapOpts *zapOptions) error {
 		client.Publish(pubOpts.topic, byte(pubOpts.qos), pubOpts.retain, data)
 	}
 
-	if zapOpts.verbose {
-		fmt.Printf("message sent\n")
-	}
+	output.VERBOSE.Printf("message sent\n")
 
 	return nil
 }

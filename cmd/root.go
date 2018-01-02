@@ -21,13 +21,9 @@
 package cmd
 
 import (
-	"log"
-	"os"
-
-	MQTT "github.com/eclipse/paho.mqtt.golang"
-
 	"github.com/docker/docker/pkg/term"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 const usageTemplate = `Usage:{{if .Runnable}}
@@ -97,19 +93,7 @@ MQTT message bus`,
 	)
 	rootCmd.SetUsageTemplate(usageTemplate)
 
-	// Uncomment these to turn on debugging from within the mqtt library.
-	MQTT.ERROR = log.New(os.Stdout,
-		"ERROR: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-	MQTT.CRITICAL = log.New(os.Stdout,
-		"CRITICAL: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-	// MQTT.WARN = log.New(os.Stdout,
-	//        "WARN: ",
-	//        log.Ldate|log.Ltime|log.Lshortfile)
-	// MQTT.DEBUG = log.New(os.Stdout,
-	//        "DEBUG: ",
-	//        log.Ldate|log.Ltime|log.Lshortfile)
+	setUpLogging()
 
 	return rootCmd
 }
@@ -120,4 +104,16 @@ func wrappedFlagUsages(cmd *cobra.Command) string {
 		width = int(ws.Width)
 	}
 	return cmd.Flags().FlagUsagesWrapped(width - 1)
+}
+
+func setUpLogging() {
+
+	// TODO: need to set up my own log handlers and get rid of
+	// all the fmt.Print statements.  Can also handle verbose this way
+
+	// standard
+	// stats
+	// verbose
+	// debug
+
 }

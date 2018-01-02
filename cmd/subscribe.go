@@ -149,9 +149,7 @@ func runSubscribe(flags *pflag.FlagSet, zapOpts *zapOptions) error {
 	}
 	defer client.Disconnect(250)
 
-	if zapOpts.verbose {
-		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
-	}
+	output.VERBOSE.Printf("Connected to %s\n", clientOpts.Servers[0])
 
 	msgOpts := messageOptions{}
 	msgOpts.quit = quit
@@ -229,13 +227,26 @@ var basicFunctions = template.FuncMap{
 		// Remove the trailing new line added by the encoder
 		return strings.TrimSpace(buf.String())
 	},
-	"split":    strings.Split,
-	"join":     strings.Join,
-	"title":    strings.Title,
-	"lower":    strings.ToLower,
-	"upper":    strings.ToUpper,
-	"pad":      padWithSpace,
-	"truncate": truncateWithLength,
+	"split":      strings.Split,
+	"join":       strings.Join,
+	"title":      strings.Title,
+	"lower":      strings.ToLower,
+	"upper":      strings.ToUpper,
+	"pad":        padWithSpace,
+	"truncate":   truncateWithLength,
+	"prettyjson": prettyJSON,
+}
+
+func prettyJSON(source string) string {
+	var prettyJSON bytes.Buffer
+	error := json.Indent(&prettyJSON, []byte(source), "", "    ")
+	if error != nil {
+		// TODO: spit something to stderr if verbose
+		// fmt.Println("JSON parse error: ", error)
+		return source
+	}
+
+	return prettyJSON.String()
 }
 
 // padWithSpace adds whitespace to the input if the input is non-empty

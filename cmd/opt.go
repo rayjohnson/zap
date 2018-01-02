@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"path"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/rayjohnson/zap/output"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pelletier/go-toml"
@@ -142,6 +144,10 @@ func getValueFromConfig(fs *pflag.FlagSet, configTree *toml.Tree, key string, de
 }
 
 func (zapOpts *zapOptions) processOptions(fs *pflag.FlagSet) error {
+	if zapOpts.verbose {
+		output.VERBOSE = log.New(os.Stdout, "", 0)
+	}
+
 	var err error
 	if err = loadConfigFile(zapOpts); err != nil {
 		return err
@@ -200,6 +206,7 @@ func (zapOpts *zapOptions) processOptions(fs *pflag.FlagSet) error {
 			return err
 		}
 
+		// TODO: really?  Is this true?
 		// CleanSession is only a subscribe option - but must be set on clientOptions
 		zapOpts.clientOpts.CleanSession = zapOpts.subOpts.cleanSession
 	}
@@ -267,32 +274,30 @@ func (conOpts *connectionOptions) buildAndValidateClientOpts() (*MQTT.ClientOpti
 
 // PrintConnectionInfo will so all the args used if verbose is on
 func (zapOpts *zapOptions) PrintConnectionInfo() {
-	if zapOpts.verbose {
-		fmt.Println("Connecting to server with following parameters")
-		if zapOpts.broker != "" {
-			fmt.Println("  From broker config: ", zapOpts.broker)
-		}
-		fmt.Println("  Server: ", zapOpts.conOpts.server)
-		if zapOpts.conOpts.keyFile != "" {
-			fmt.Println("  TLS Key path: ", zapOpts.conOpts.keyFile)
-			fmt.Println("  TLS Cert path: ", zapOpts.conOpts.certFile)
-		}
-		if zapOpts.conOpts.caFile != "" {
-			fmt.Println("  TLS CA path: ", zapOpts.conOpts.caFile)
-		}
-		if zapOpts.conOpts.insecure {
-			fmt.Println("  TLS Skip Verify: ", zapOpts.conOpts.insecure)
-		}
-		fmt.Println("  ClientId: ", zapOpts.conOpts.clientID)
-		fmt.Println("  Username: ", zapOpts.conOpts.username)
-		fmt.Println("  Password: ", zapOpts.conOpts.password)
-		if zapOpts.subOpts != nil {
-			fmt.Println("  QOS: ", zapOpts.subOpts.qos)
-			fmt.Println("  Topic: ", zapOpts.subOpts.topic)
-		}
-		if zapOpts.pubOpts != nil {
-			fmt.Println("  QOS: ", zapOpts.pubOpts.qos)
-			fmt.Println("  Topic: ", zapOpts.pubOpts.topic)
-		}
+	output.VERBOSE.Println("Connecting to server with following parameters")
+	if zapOpts.broker != "" {
+		output.VERBOSE.Println("  From broker config: ", zapOpts.broker)
+	}
+	output.VERBOSE.Println("  Server: ", zapOpts.conOpts.server)
+	if zapOpts.conOpts.keyFile != "" {
+		output.VERBOSE.Println("  TLS Key path: ", zapOpts.conOpts.keyFile)
+		output.VERBOSE.Println("  TLS Cert path: ", zapOpts.conOpts.certFile)
+	}
+	if zapOpts.conOpts.caFile != "" {
+		output.VERBOSE.Println("  TLS CA path: ", zapOpts.conOpts.caFile)
+	}
+	if zapOpts.conOpts.insecure {
+		output.VERBOSE.Println("  TLS Skip Verify: ", zapOpts.conOpts.insecure)
+	}
+	output.VERBOSE.Println("  ClientId: ", zapOpts.conOpts.clientID)
+	output.VERBOSE.Println("  Username: ", zapOpts.conOpts.username)
+	output.VERBOSE.Println("  Password: ", zapOpts.conOpts.password)
+	if zapOpts.subOpts != nil {
+		output.VERBOSE.Println("  QOS: ", zapOpts.subOpts.qos)
+		output.VERBOSE.Println("  Topic: ", zapOpts.subOpts.topic)
+	}
+	if zapOpts.pubOpts != nil {
+		output.VERBOSE.Println("  QOS: ", zapOpts.pubOpts.qos)
+		output.VERBOSE.Println("  Topic: ", zapOpts.pubOpts.topic)
 	}
 }

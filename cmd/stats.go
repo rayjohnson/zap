@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/rayjohnson/zap/output"
 	"github.com/rayjohnson/zap/viewstats"
 )
 
@@ -68,8 +69,22 @@ func runStats(flags *pflag.FlagSet, zapOpts *zapOptions) error {
 	}
 	clientOpts := zapOpts.clientOpts
 
-	// TODO: do I need to do this?  So what if it isn't clean?  I'll get data
-	clientOpts.CleanSession = true
+	// Need this false so we still have subscriptions if we disconnect for
+	// any reason and then reconnect.
+	clientOpts.CleanSession = false
+
+	connectChan := make(chan viewstats.ConnectHandler, 1)
+	clientOpts.OnConnectionLost = func(client MQTT.Client, reason error) {
+		connectChan <- viewstats.ConnectHandler{
+			IsConnected: false,
+			Err:         reason,
+		}
+	}
+	clientOpts.OnConnect = func(client MQTT.Client) {
+		connectChan <- viewstats.ConnectHandler{
+			IsConnected: true,
+		}
+	}
 
 	client := MQTT.NewClient(clientOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -77,9 +92,7 @@ func runStats(flags *pflag.FlagSet, zapOpts *zapOptions) error {
 	}
 	defer client.Disconnect(250)
 
-	if zapOpts.verbose {
-		fmt.Printf("Connected to %s\n", clientOpts.Servers[0])
-	}
+	output.VERBOSE.Printf("Connected to %s\n", clientOpts.Servers[0])
 
 	viewstats.PrepViewer()
 	if token := client.Subscribe(statsTopic, statsQos, statsHandler); token.Wait() && token.Error() != nil {
@@ -87,7 +100,7 @@ func runStats(flags *pflag.FlagSet, zapOpts *zapOptions) error {
 	}
 	defer client.Unsubscribe(statsTopic)
 
-	viewstats.StartStatsDisplay()
+	viewstats.StartStatsDisplay(connectChan)
 	return nil
 }
 
