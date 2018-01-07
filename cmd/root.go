@@ -64,14 +64,15 @@ func Execute(ver string, rev string) {
 	version = ver
 	revision = rev
 
-	rootCmd := setupRootCommand()
+	rootCmd := SetupRootCommand()
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func setupRootCommand() *cobra.Command {
+// SetupRootCommand sets of the cobra data structures for command line processing
+func SetupRootCommand() *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	var rootCmd = &cobra.Command{
 		Use:   "zap",

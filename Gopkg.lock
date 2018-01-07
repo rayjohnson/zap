@@ -71,7 +71,7 @@
   branch = "master"
   name = "github.com/rayjohnson/cobra-man"
   packages = ["man"]
-  revision = "1fc980463edb61e4dec6375fb7c5fe4c893cc737"
+  revision = "c35f7373d97518272bf3980dc7bb0c94cb89be42"
 
 [[projects]]
   name = "github.com/spf13/cobra"

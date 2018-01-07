@@ -19,17 +19,17 @@ os = $(word 1, $@)
 
 # Cross compile and build all platforms and add assets
 .PHONY: $(PLATFORMS)
-$(PLATFORMS): $(RELEASE_ROOT)/zap
+$(PLATFORMS): $(RELEASE_ROOT)/doc
 	mkdir -p $(RELEASE_ROOT)/$(os)/man/man1
 	GOOS=$(os) GOARCH=amd64 go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/$(os)/$(BINARY)
-	$(RELEASE_ROOT)/zap version --generate-auto-complete --directory $(RELEASE_ROOT)/$(os)/
-	$(RELEASE_ROOT)/zap version --generate-man-pages --directory $(RELEASE_ROOT)/$(os)/man/man1/
+	$(RELEASE_ROOT)/doc generate-auto-complete --directory $(RELEASE_ROOT)/$(os)/
+	$(RELEASE_ROOT)/doc generate-man-pages --directory $(RELEASE_ROOT)/$(os)/man/man1/
 	cp -r examples $(RELEASE_ROOT)/$(os)/
 	cp README.md $(RELEASE_ROOT)/$(os)/
 
-$(RELEASE_ROOT)/zap:
+$(RELEASE_ROOT)/doc: $(SOURCES) doc/main.go
 	mkdir -p $(RELEASE_ROOT)
-	go build ${LDFLAGS} -o $(RELEASE_ROOT)/zap main.go
+	go build ${LDFLAGS} -o $(RELEASE_ROOT)/doc doc/main.go
 
 .PHONY: setup
 setup:  ## Creates vendor directory with all dependencies
