@@ -21,11 +21,9 @@
 package main
 
 import (
-	"github.com/rayjohnson/cobra-man/man"
+	"github.com/rayjohnson/cobraman"
 	"github.com/rayjohnson/zap/cmd"
-	"github.com/spf13/cobra"
 	"os"
-	"path/filepath"
 )
 
 var (
@@ -35,61 +33,24 @@ var (
 	COMMIT string
 )
 
-var installDirectory string
-
-// TODO: build different cmd line for this tool
 func main() {
-	docCmd := setupDocCommands()
+	// Get the root cobra command for the zap application
+	appCmds := cmd.SetupRootCommand(VERSION, COMMIT)
 
-	if err := docCmd.Execute(); err != nil {
-		os.Exit(1)
-	}
-}
+	docGenerator := cobraman.CreateDocGenCmdLineTool(appCmds)
+	docGenerator.AddBashCompletionGenerator("zap.sh")
 
-func generateManPages(myCmd *cobra.Command, args []string) error {
-	appCmd := cmd.SetupRootCommand()
-
-	manOpts := &man.GenerateManOptions{
+	manOpts := &cobraman.CobraManOptions{
 		LeftFooter:   "Zap " + VERSION,
 		CenterHeader: "Zap Manual",
 		Author:       "Ray Johnson <ray.johnson+zap@gmail.com>",
-		Directory:    installDirectory,
-		Bugs:         `Bugs related to zap can be filed at https://github.com/rjohnson/zap`,
-		UseTemplate:  man.MdocManTemplate,
+		Bugs:         `Bugs related to zap can be filed at https://github.com/rayjohnson/zap`,
 	}
-	return man.GenerateManPages(appCmd, manOpts)
-}
+	docGenerator.AddDocGenerator(manOpts, "mdoc")
+	docGenerator.AddDocGenerator(manOpts, "troff")
+	docGenerator.AddDocGenerator(manOpts, "markdown")
 
-func generateAutoComplete(myCmd *cobra.Command, args []string) error {
-	appCmd := cmd.SetupRootCommand()
-
-	path := filepath.Join(installDirectory, "zap.sh")
-	return appCmd.GenBashCompletionFile(path)
-}
-
-func setupDocCommands() *cobra.Command {
-	var docCmd = &cobra.Command{
-		Use:   "doc",
-		Args:  cobra.NoArgs,
-		Short: "Generate documentation, etc.",
+	if err := docGenerator.Execute(); err != nil {
+		os.Exit(1)
 	}
-	docCmd.PersistentFlags().StringVar(&installDirectory, "directory", ".", "Directory to install generated files")
-
-	manCmd := &cobra.Command{
-		Use:   "generate-man-pages",
-		Args:  cobra.NoArgs,
-		Short: "Generate man pages",
-		RunE:  generateManPages,
-	}
-
-	completeCmd := &cobra.Command{
-		Use:   "generate-auto-complete",
-		Args:  cobra.NoArgs,
-		Short: "Generate bash auto complete script",
-		RunE:  generateAutoComplete,
-	}
-
-	docCmd.AddCommand(manCmd, completeCmd)
-
-	return docCmd
 }

@@ -172,11 +172,7 @@ If you have any ideas on how this could be made more useful please let me know!
 
 ## Bash Completion
 
-The pre-built executable packages has a zap.sh file that can be used for bash completion.
-The script can be generated from zap itself with the following command:
-```bash
-$ zap version --generate-auto-complete --directory .
-```
+Included in the packaged release is a bash completion script for the zap tool.
 
 You need bash completion running on your machine.  All standard (non-minimal) installations
 of Linux would already have it.  

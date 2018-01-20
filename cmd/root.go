@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/docker/docker/pkg/term"
 	"github.com/spf13/cobra"
 	"os"
@@ -60,11 +61,8 @@ var cfgFile string
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ver string, rev string) {
-	version = ver
-	revision = rev
-
-	rootCmd := SetupRootCommand()
+func Execute(version string, revision string) {
+	rootCmd := SetupRootCommand(version, revision)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -72,8 +70,9 @@ func Execute(ver string, rev string) {
 }
 
 // SetupRootCommand sets of the cobra data structures for command line processing
-func SetupRootCommand() *cobra.Command {
+func SetupRootCommand(version string, revision string) *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
+	var versionFlag bool
 	var rootCmd = &cobra.Command{
 		Use:   "zap",
 		Args:  cobra.NoArgs,
@@ -82,13 +81,21 @@ func SetupRootCommand() *cobra.Command {
 
 zap is a little utility for publishing or subscribing to events for the
 MQTT message bus`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if versionFlag {
+				fmt.Println("zap version " + version + ", Revision: " + revision)
+			} else {
+				fmt.Println(cmd.Help())
+			}
+		},
 	}
+
+	rootCmd.Flags().BoolVar(&versionFlag, "version", false, "Display version information")
 
 	cobra.AddTemplateFunc("wrappedFlagUsages", wrappedFlagUsages)
 
 	rootCmd.AddCommand(
 		newSubscribeCommand(),
-		newVersionCommand(),
 		newPublishCommand(),
 		newStatsCommand(),
 	)

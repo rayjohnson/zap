@@ -20,16 +20,20 @@ os = $(word 1, $@)
 # Cross compile and build all platforms and add assets
 .PHONY: $(PLATFORMS)
 $(PLATFORMS): $(RELEASE_ROOT)/doc
-	mkdir -p $(RELEASE_ROOT)/$(os)/man/man1
+	@mkdir -p $(RELEASE_ROOT)/$(os)/man/man1
 	GOOS=$(os) GOARCH=amd64 go build -v ${LDFLAGS} -o $(RELEASE_ROOT)/$(os)/$(BINARY)
 	$(RELEASE_ROOT)/doc generate-auto-complete --directory $(RELEASE_ROOT)/$(os)/
-	$(RELEASE_ROOT)/doc generate-man-pages --directory $(RELEASE_ROOT)/$(os)/man/man1/
+	$(RELEASE_ROOT)/doc generate-mdoc --directory $(RELEASE_ROOT)/$(os)/man/man1/
 	cp -r examples $(RELEASE_ROOT)/$(os)/
 	cp README.md $(RELEASE_ROOT)/$(os)/
 
 $(RELEASE_ROOT)/doc: $(SOURCES) doc/main.go
-	mkdir -p $(RELEASE_ROOT)
+	@mkdir -p $(RELEASE_ROOT)/markdown
+	@mkdir -p $(RELEASE_ROOT)/man/man1
 	go build ${LDFLAGS} -o $(RELEASE_ROOT)/doc doc/main.go
+	$(RELEASE_ROOT)/doc generate-markdown --directory $(RELEASE_ROOT)/markdown
+	$(RELEASE_ROOT)/doc generate-auto-complete --directory $(RELEASE_ROOT)/
+	$(RELEASE_ROOT)/doc generate-mdoc --directory $(RELEASE_ROOT)/man/man1/
 
 .PHONY: setup
 setup:  ## Creates vendor directory with all dependencies
@@ -37,6 +41,9 @@ setup:  ## Creates vendor directory with all dependencies
 
 .PHONY: build
 build: $(BINARY)  ## Build the source
+
+.PHONY: docs
+docs: $(RELEASE_ROOT)/doc  ## Build documentation
 
 .PHONY: install
 install: build  ## Builds and installs zap into your go/bin
